@@ -7,19 +7,19 @@ public class VersionExample {
 		
 		{
 			Version example = Version.create();
-		
+			
 			System.out.println("The default version is: "+example);
 		}
 		
 		{
 			Version example = Version.create(1,2,3);
-		
+			
 			System.out.println("This is a specific version: "+example);
 		}
 
 		{
 			Version example = Version.create(1,2,3);
-		
+			
 			System.out.println("This is the initial version: "+example);
 			
 			example.increment(Increment.POINT);

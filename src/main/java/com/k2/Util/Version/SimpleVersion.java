@@ -1,19 +1,35 @@
 package com.k2.Util.Version;
 
+/**
+ * This class is a simple implementation of the Version Interface
+ * This is the implementation of the Interface that is retured by calls to the static create(...) methods of the interface
+ * 
+ * @author simon
+ *
+ */
 public class SimpleVersion implements Version {
 	
-	public int major = 0;
-	public int minor = 0;
-	public int point = 0;
+	private int major = 0;
+	private int minor = 0;
+	private int point = 0;
 	
+	/**
+	 * Create an instance of the SimpleVersion setting the major, minor and point version numbers.
+	 * @param major	The major version number
+	 * @param minor	The minor version number
+	 * @param point The point version number
+	 */
 	public SimpleVersion(int major, int minor, int point) {
 		this.major = major;
 		this.minor = minor;
 		this.point = point;
 	}
 	
+	@Override
 	public int major() { return major; }
+	@Override
 	public int minor() { return minor; }
+	@Override
 	public int point() { return point; }
 
 	@Override
@@ -26,6 +42,9 @@ public class SimpleVersion implements Version {
 		return result;
 	}
 
+	/**
+	 * Check for version equality based on the major, minor and point version numbers only.
+	 */
 	@Override
 	public boolean equals(Object obj) {
 		if (this == obj)
@@ -44,11 +63,17 @@ public class SimpleVersion implements Version {
 		return true;
 	}
 
+	/**
+	 * Return a sensible rendering of the version as a String, e.g. "v1.2.3"
+	 */
 	@Override
 	public String toString() {
 		return "v" + major + "." + minor + "." + point;
 	}
 
+	/**
+	 * Increment the version by one
+	 */
 	@Override
 	public void increment(Increment inc) {
 		switch(inc) {
