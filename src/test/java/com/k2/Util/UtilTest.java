@@ -331,7 +331,7 @@ public class UtilTest {
 		assertEquals(new Date(111111111111111L), DateUtil.toDate(foo2));
 		assertNull(DateUtil.toDate((Foo)null));
 		
-		DateUtil.defaultDateFormatter(DateFormat.DATE);
+		DateUtil.defaultDateFormat(DateFormat.DATE);
 		assertEquals("1970-01-01", DateUtil.toString(new Date(12345678)));
 		assertEquals("1970-01-12", DateUtil.toString(new Date(987654321)));
 		
@@ -340,7 +340,7 @@ public class UtilTest {
 		assertEquals("1970/12/01", DateUtil.toString(new Date(987654321)));
 		
 		DateUtil.dateTimeFormatter(new SimpleDateFormat("yyyy/dd/MM HH:mm:ss"));
-		DateUtil.defaultDateFormatter(DateFormat.DATE_TIME);
+		DateUtil.defaultDateFormat(DateFormat.DATE_TIME);
 		assertEquals("1970/01/01 04:25:45", DateUtil.toString(new Date(12345678)));
 		assertEquals("1970/12/01 11:20:54", DateUtil.toString(new Date(987654321)));
 		assertEquals("1970/12/01", DateUtil.toString(new Date(987654321), DateFormat.DATE));

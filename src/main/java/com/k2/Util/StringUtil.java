@@ -468,7 +468,7 @@ public class StringUtil {
 	 * @return	The checkValue if it is not null else the valueIfNull
 	 */
 	public static String nvl(String checkValue, String valueIfNull) {
-		return (checkValue==null) ? valueIfNull : checkValue;
+		return (!isSet(checkValue)) ? valueIfNull : checkValue;
 	}
 
 

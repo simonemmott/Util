@@ -118,13 +118,13 @@ public class DateUtil {
 		return null;
 	}
 	/**
-	 * This method defines whethe the default date format should be date only or date and time
+	 * This method defines whether the default date format should be date only or date and time
 	 * 
 	 * Defaults to date and time
 	 * 
 	 * @param newDefaultFormat The new default format to use
 	 */
-	public static void defaultDateFormatter(DateFormat newDefaultFormat) {
+	public static void defaultDateFormat(DateFormat newDefaultFormat) {
 		defaultFormat = newDefaultFormat;
 	}
 	/**
