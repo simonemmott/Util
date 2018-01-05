@@ -121,7 +121,7 @@ public class IdentityUtil {
 			}
 		}
 		
-		return getIdentityField(cls);
+		return getIdField(cls);
 
 
 	}
