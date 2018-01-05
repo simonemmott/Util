@@ -157,9 +157,11 @@ The identified interface defines a single method to return a String value that i
 
 The IdentityUtil provides a static method to extract the Serializable value of an objects primary key.
 
-| Method                       | Description |
-|------------------------------|-------------|
-| `Serializable getId(Object)` | This method gets the serializable id value from an object. |
+| Method                                           | Description |
+|--------------------------------------------------|-------------|
+| `Serializable getId(Object)`                     | This method gets the serializable id value from an object. |
+| `Serializable getId(Object, Serializable)`       | This method gets the serializable id value from an object. If a suitable id value cannot be found the given serializable value is returned |
+| `String getIdentity(Object, String)` | This method gets the string identity of an object. If the object doesn't implement the Identified interface then a the value of a field annotated with the `@Identity` annotation is returned. If no suitable identity value can be obtained then the objects id as a string is returned. If no id value exists then the given default value is used |
 
 #### getId(...)
 
@@ -519,18 +521,19 @@ The StringUtil offers the following static method to replace a null String value
 
 The StringUtil provides the following static methods for handling Strings
 
-| Method                            | Description |
-|-----------------------------------|-------------|
-| `String initialLowerCase(String)` | Returns the given Sting with its first character in lower case |
-| `String initialUpperCase(String)` | Returns the given Sting with its first character in upper case |
-| `boolean isSet(String)`           | Returns true if the given String is not null and contains non white space characters |
-| `String[] words(String)`          | Splits the given string into words on any white space characters |
-| `String safeWord(String)`         | Returns the given Sting with all its unsafe characters removed. See below for more details |
-| `String aliasCase(String)`        | Returns the given Sting in alias case. See below |
-| `String camelCase(String)`        | Returns the given Sting in camel case. See below |
-| `String classCase(String)`        | Returns the given Sting in class case. See below |
-| `String staticCase(String)`       | Returns the given Sting in static case. See below |
-| `String kebebCase(String)`        | Returns the given Sting in kebab case. See below |
+| Method                                           | Description |
+|--------------------------------------------------|-------------|
+| `String initialLowerCase(String)`                | Returns the given Sting with its first character in lower case |
+| `String initialUpperCase(String)`                | Returns the given Sting with its first character in upper case |
+| `boolean isSet(String)`                          | Returns true if the given String is not null and contains non white space characters |
+| `String[] words(String)`                         | Splits the given string into words on any white space characters |
+| `String safeWord(String)`                        | Returns the given String with all its unsafe characters removed. See below for more details |
+| `String aliasCase(String)`                       | Returns the given String in alias case. See below |
+| `String camelCase(String)`                       | Returns the given String in camel case. See below |
+| `String classCase(String)`                       | Returns the given String in class case. See below |
+| `String staticCase(String)`                      | Returns the given String in static case. See below |
+| `String kebebCase(String)`                       | Returns the given String in kebab case. See below |
+| `String replaceAll(String, String, Object ... )` | Returns first String replacing each occurrence of the second string with the string variants of the given objects |
 
 ### Alias Case
 
@@ -603,11 +606,19 @@ FileUtil provides the following methods for locking files. Locking files is achi
 | `FileLock lock(File)` | This method locks the file if it exists and is not already locked and returns the FileLock holding the lock. If the file is already locked the checked `FileLockedException` is thrown |
 | `boolean isLocked(File)` | returns true if the file is locked |
 
+### Createing Files
+
+FileUtil provides the following methods for creating files.
+
+| Method           | Description |
+|------------------|-------------|
+| `buildTree(File, Path ...)` | This method builds a directory tree defined by the given paths as child directories of the given file. If the given file does not exist it is created. If it is a file a UtilityError is thrown |
+
 ## Registering Type Converters
 
 Type converters can be registered with static util classes through the `registerTypeConverter(TypeConverter)` method of the static utility.
 
-With the follwing classes deffined:
+With the following classes defined:
 ```java
 public static interface FooBar {
 	public int getA();
@@ -671,24 +682,6 @@ The ClassUtil defines the following methods of checking multiple annotations aga
 | ALL   | The found class must be annotated with all the given annotations |
 | ANY   | The found class must match any of the given annotations |
 
-## UtilsLogger
-
-The UtilsLogger provides static methods for managing the logging of calls to the static utilities methods
-
-The UtilsLogger provides the following static methods
-
-| Method                       | Description |
-|------------------------------|-------------|
-| `Logger logger()`            | This method returns the current utilities logger. This default to an anonymous logger |
-| `logger(Logger)`             | This method sets the current utilities logger. |
-| `error(String, Throwable)`   | This method logs a server message to the utilities logger with the throwable that caused the message |
-| `warning(String, Throwable)` | This method logs a warning message to the utilities logger with the throwable that caused the message |
-| `severe(String)`             | This method logs a server message to the utilities logger |
-| `warn(String)`               | This method logs a warning message to the utilities logger |
-| `info(String)`               | This method logs a information message to the utilities logger |
-| `fine(String)`               | This method logs a fine message to the utilities logger |
-| `finer(String)`              | This method logs a finer message to the utilities logger |
-| `finest(String)`             | This method logs a finest message to the utilities logger |
 
 
 

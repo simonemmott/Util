@@ -1,9 +1,13 @@
 package com.k2.Util;
 
+import java.lang.invoke.MethodHandles;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * This utility provides static method for handling Boolean values.
@@ -13,6 +17,8 @@ import java.util.Random;
  */
 public class BooleanUtil {
 	
+	private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
 	private static String FALSE_STRING = "false";
 	private static String TRUE_STRING = "true";
 	private static int FALSE_INT = 0;

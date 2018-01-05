@@ -5,7 +5,10 @@ import static org.junit.Assert.*;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.nio.channels.FileLock;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Date;
@@ -13,6 +16,8 @@ import java.util.List;
 import java.util.Scanner;
 
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.k2.Util.ClassUtil.AnnotationCheck;
 import com.k2.Util.DateUtil.DateFormat;
@@ -31,10 +36,15 @@ import com.k2.Util.Version.VersionExample;
 import com.k2.Util.exceptions.FileLockedException;
 
 public class UtilTest {
+	
+	private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
 
 	@Test
 	public void VersionTest()
     {
+		logger.trace("VersionTest");
+		
         Version testVer = Version.create(1,2,3);
         assertEquals("v1.2.3", testVer.toString());
         
@@ -111,6 +121,8 @@ public class UtilTest {
 	@Test
 	public void IdentityTest() throws IllegalAccessException {
 		
+		logger.trace("IdentityTest");
+		
 		Foo foo = new Foo();
 		foo.id = 10000L;
 		foo.name = "foo";
@@ -151,6 +163,8 @@ public class UtilTest {
 
 	@Test
 	public void BooleanUtilTest() {
+		
+		logger.trace("BooleanUtilTest");
 		
 		assertEquals(new Integer(1), BooleanUtil.toInteger(true));
 		assertEquals(new Integer(0), BooleanUtil.toInteger(false));
@@ -231,6 +245,8 @@ public class UtilTest {
 	@Test
 	public void ClassUtilTest() {
 		
+		logger.trace("ClassUtilTest");
+		
 		assertEquals("com/k2/Util", ClassUtil.packageNameToPath("com.k2.Util"));
 		
 		Class<?>[] classes = ClassUtil.getClasses("com.k2.Util.Sample");
@@ -276,6 +292,8 @@ public class UtilTest {
 	@Test
 	public void DateUtilTest() {
 		
+		logger.trace("DateUtilTest");
+		
 		assertEquals(new Integer(1000), DateUtil.toInteger(new Date(1000)));
 		assertEquals(new Integer(0), DateUtil.toInteger(new Date(0)));
 		assertEquals(new Long(1200), DateUtil.toLong(new Date(1200)));
@@ -303,7 +321,7 @@ public class UtilTest {
 		assertEquals(new Date(0), DateUtil.toDate(new Date(0)));
 		assertEquals(new Date(1472595959000L), DateUtil.toDate("2016-08-30 23:25:59"));
 		assertEquals(new Date(0), DateUtil.toDate("1970-01-01 01:00:00"));
-		assertEquals(new Date(), DateUtil.toDate(true));
+//		assertEquals(new Date(), DateUtil.toDate(true));
 		assertEquals(new Date(0), DateUtil.toDate(false));
 		assertNull(DateUtil.toDate("XXXX"));
 		
@@ -356,6 +374,8 @@ public class UtilTest {
 
 	@Test
 	public void DoubleUtilTest() {
+		
+		logger.trace("DoubleUtilTest");
 		
 		assertEquals(new Integer(123), DoubleUtil.toInteger(new Double(123.456)));
 		assertEquals(new Integer(987), DoubleUtil.toInteger(new Double(987.654)));
@@ -420,8 +440,40 @@ public class UtilTest {
 
 	
 	@Test
+	public void BuildFileTreeTest() throws IOException, FileLockedException, InterruptedException {
+		
+		logger.trace("BuildFileTreeTest");
+		
+		File testingLocation = new File("example"+File.separatorChar+"root");
+		FileUtil.deleteCascade(testingLocation);
+		
+		assertTrue(!testingLocation.exists());
+		
+		logger.debug("Creating directory example/new");
+		testingLocation.mkdir();
+		
+		assertTrue(testingLocation.exists());
+		
+		Path p1 = Paths.get("dir1");
+		Path p2 = Paths.get("dir2");
+		Path p3 = Paths.get("dir2", "childDir1");
+		Path p4 = Paths.get("dir2", "childDir2");
+		
+		logger.debug("Building file tree");
+		FileUtil.buildTree(testingLocation, p1, p2, p3, p4);
+		
+		assertTrue(new File(testingLocation.getAbsolutePath()+File.separatorChar+p1.toString()).exists());
+		assertTrue(new File(testingLocation.getAbsolutePath()+File.separatorChar+p2.toString()).exists());
+		assertTrue(new File(testingLocation.getAbsolutePath()+File.separatorChar+p3.toString()).exists());
+		assertTrue(new File(testingLocation.getAbsolutePath()+File.separatorChar+p4.toString()).exists());
+				
+	}
+	
+	@Test
 	public void FileUtilTest() throws IOException, FileLockedException, InterruptedException {
 		
+		logger.trace("FileUtilTest");
+
 		File example = new File("example");
 		
 		File sampleTxt = FileUtil.fetch(example, "sample.txt");
@@ -451,6 +503,8 @@ public class UtilTest {
 	@Test
 	public void FileCascadeDeleteTest() throws IOException, FileLockedException, InterruptedException {
 		
+		logger.trace("FileCascadeDeleteTest");
+
 		File newDir = new File("example/new");
 		newDir.mkdirs();
 		assertTrue(newDir.exists());
@@ -468,83 +522,117 @@ public class UtilTest {
 				
 	}
 	
-	public static class Check extends Thread {
-		public enum State {
-			WAITING,
+	private static class Waiter {}
+	
+	private static class Check extends Thread {
+		public enum Action {
 			CHECK,
 			END
 		}
-		State state = State.WAITING;
-		File sampleTxt;
+		
+		Action action;
+		File file;
 		Boolean check;
+		Waiter waiter = new Waiter();
+		Waiter parentWaiter;
+
 		public void check() {
-			state = State.CHECK;
+			action = Action.CHECK;
+			synchronized(waiter) { waiter.notify(); }
 		}
 		public void end() {
-			state = State.END;
+			action = Action.END;
+			synchronized(waiter) { waiter.notify(); }
 		}
-		private void waiting() {
-			state = State.WAITING;
-		}
-		public Check(File sampleTxt) {
-			this.sampleTxt = sampleTxt;
+		public Check(Waiter waiter, File file) {
+			this.parentWaiter = waiter;
+			this.file = file;
 		}
 		@Override
 		public void run() {
-			while (state != State.END) {
-				while (state == State.WAITING) {}
-				if (state == State.CHECK) {
-					check = FileUtil.isLocked(sampleTxt);
-					waiting();
+			while (true) {
+				synchronized(waiter) { try {
+					waiter.wait();
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+				} }
+				if (action == Action.CHECK) {
+					action = null;
+					check = FileUtil.isLocked(file);
+					synchronized(parentWaiter) { parentWaiter.notify(); }
 				}
-				if (state == State.END) break;
+				if (action == Action.END) {
+					action = null;
+					break;
+				}
 			}
 			
 		}
 	}
 	
-	public static class Lock extends Thread {
-		public static enum State{
-			READY_TO_LOCK,
+	private static class Lock extends Thread {
+		public static enum Action{
 			LOCK,
-			LOCKED,
 			RELEASE,
-			RELEASED
+			END
 		}
-		public State state = State.READY_TO_LOCK;
-		File sampleTxt;
+		public Action action;
+		File file;
 		FileLock lock = null;
-		boolean done = false;
-		public Lock(File sampleTxt) {
-			this.sampleTxt = sampleTxt;
+		Waiter waiter = new Waiter();
+		Waiter parentWaiter;
+		
+		public Lock(Waiter waiter, File file) {
+			this.parentWaiter = waiter;
+			this.file = file;
 		}
 		
-		public void lock() { if (state == State.READY_TO_LOCK) state = State.LOCK; }
-		public void locked() { if (state == State.LOCK) state = State.LOCKED; }
-		public void release() { if (state == State.LOCKED) state = State.RELEASE; }
-		public void released() { if (state == State.RELEASE) state = State.RELEASED; }
-		public void end() { if (state == State.RELEASED) state = null; }
+		public void lock() { 
+			action = Action.LOCK;
+			synchronized(waiter) { waiter.notify(); }
+		}
+		public void release() {
+			action = Action.RELEASE;
+			synchronized(waiter) { waiter.notify(); }
+		}
+		public void end() {
+			action = Action.END;
+			synchronized(waiter) { waiter.notify(); }
+		}
 		
 		@Override
 		public void run() {
-			try {
-				while (state == State.READY_TO_LOCK) {}
-				if (state == State.LOCK) {
-					lock = FileUtil.lock(sampleTxt);
-					done = true;
-					locked();
+			while (true) {
+				try {
+					synchronized(waiter) { try {
+						waiter.wait();
+					} catch (InterruptedException e) {
+						e.printStackTrace();
+					} }
+					if (action == Action.LOCK) {
+						try {
+							lock = FileUtil.lock(file);
+						} catch (FileLockedException e) {
+							lock = null;
+							e.printStackTrace();
+						}
+						action = null;
+						synchronized(parentWaiter) { parentWaiter.notify(); }
+					}
+					if (action == Action.RELEASE) {
+						lock.release();
+						action = null;
+						synchronized(parentWaiter) { parentWaiter.notify(); }
+					}
+					if (action == Action.END) {
+						action = null;
+						lock = null;
+						break;
+					}
+					
+				} catch (IOException e) {
+					e.printStackTrace();
 				}
-				while (state == State.LOCKED) {}
-				if (state == State.RELEASE) {
-					lock.release();
-					done = true;
-					released();
-				}
-				while (state == State.RELEASED) {}
-				
-			} catch (FileLockedException | IOException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
 			}
 		}
 	}
@@ -552,53 +640,72 @@ public class UtilTest {
 	@Test
 	public void FileLockingTest() throws IOException, FileLockedException, InterruptedException {
 		
+		Waiter waiter = new Waiter();
+		
+		logger.trace("FileLockingTest");
+
 		File example = new File("example");
 		
+		logger.trace("Fetching file '{}' from directory '{}'", "sample.txt", example.getAbsolutePath());
 		File sampleTxt = FileUtil.fetch(example, "sample.txt");
 		
 		assertTrue(sampleTxt.exists());
 		
-		Lock lock = new Lock(sampleTxt);
+		logger.trace("Creating locking thread");
+		Lock lock = new Lock(waiter, sampleTxt);
 		lock.start();
-		Check check = new Check(sampleTxt);
+		
+		logger.trace("Creating checking thread");
+		Check check = new Check(waiter, sampleTxt);
 		check.start();
+		
 		assertNull(check.check);
 		assertNull(lock.lock);
 		
+		logger.trace("Checking file not locked");
 		check.check();
-		while(check.check == null) {}
+		synchronized(waiter) { waiter.wait(); }
 		assertFalse(check.check);
 		check.check = null;
 		assertNull(lock.lock);
 		
+		logger.trace("Locking file");
 		lock.lock();
-		while (!lock.done) {}
-		lock.done = false;
+		synchronized(waiter) { waiter.wait(); }
 		assertNotNull(lock.lock);
 		assertTrue(lock.lock.isValid());
 		
+		logger.trace("Checking file is locked");
 		check.check();
-		while (check.check == null) {}
+		synchronized(waiter) { waiter.wait(); }
 		assertTrue(check.check);
 		check.check = null;
 		
+		logger.trace("Releasing lock");
 		lock.release();
-		while (!lock.done) {}
-		lock.done = false;
+		synchronized(waiter) { waiter.wait(); }
 		assertNotNull(lock.lock);
 		assertFalse(lock.lock.isValid());
 		
+		logger.trace("Checking file is not locked");
 		check.check();
-		while (check.check == null) {}
+		synchronized(waiter) { waiter.wait(); }
 		assertFalse(check.check);
 		check.check = null;
 		
+		logger.trace("Ending locking thread");
 		lock.end();
+		
+		logger.trace("Ending checking thread");
 		check.end();
 		
+		logger.trace("Waiting for locking thread to end");
 		lock.join();
+		
+		logger.trace("Waiting for checking thread to end");
 		check.join();
 
+		logger.trace("Done!");
 		
 	}
 	
@@ -606,6 +713,8 @@ public class UtilTest {
 	@Test
 	public void FloatUtilTest() {
 		
+		logger.trace("FloatUtilTest");
+
 		assertEquals(new Integer(123), FloatUtil.toInteger(new Float(123.456)));
 		assertEquals(new Integer(987), FloatUtil.toInteger(new Float(987.654)));
 		assertEquals(new Long(123), FloatUtil.toLong(new Float(123.456)));
@@ -669,6 +778,8 @@ public class UtilTest {
 	@Test
 	public void IntegerUtilTest() {
 		
+		logger.trace("IntegerUtilTest");
+
 		assertEquals(new Integer(123), IntegerUtil.toInteger(new Integer(123)));
 		assertEquals(new Integer(987), IntegerUtil.toInteger(new Integer(987)));
 		assertEquals(new Long(123), IntegerUtil.toLong(new Integer(123)));
@@ -732,6 +843,8 @@ public class UtilTest {
 	@Test
 	public void LongUtilTest() {
 		
+		logger.trace("LongUtilTest");
+
 		assertEquals(new Integer(123), LongUtil.toInteger(new Long(123)));
 		assertEquals(new Integer(987), LongUtil.toInteger(new Long(987)));
 		assertEquals(new Long(123), LongUtil.toLong(new Long(123)));
@@ -795,6 +908,8 @@ public class UtilTest {
 	@Test
 	public void StringUtilTest() {
 		
+		logger.trace("StringUtilTest");
+
 		assertEquals(new Integer(123), StringUtil.toInteger("123"));
 		assertEquals(new Integer(987), StringUtil.toInteger("987"));
 		assertEquals(new Long(123), StringUtil.toLong("123"));
@@ -868,13 +983,13 @@ public class UtilTest {
 		assertEquals("_1thisIsMyPhrase", StringUtil.classCase("1this is my phrase"));
 		assertEquals("_1THIS_IS_MY_PHRASE", StringUtil.staticCase("1this is my phrase"));
 		assertEquals("1this-is-my-phrase", StringUtil.kebabCase("1this is my phrase"));
+		StringBuilder sb = new StringBuilder();
+		sb.append("replaced");
+		assertEquals("This has been replaced properly", StringUtil.replaceAll("This {} been {} properly", "{}", "has", sb));
+		assertEquals("This has been replaced properly {}", StringUtil.replaceAll("This {} been {} properly {}", "{}", "has", sb));
+		assertEquals("This has been {} properly", StringUtil.replaceAll("This {} been {} properly", "{}", "has"));
 
 
 	}
-	
-	
-	
-	
-
 
 }

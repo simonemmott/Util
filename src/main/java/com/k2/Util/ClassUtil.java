@@ -3,10 +3,14 @@ package com.k2.Util;
 import java.io.File;
 import java.io.IOException;
 import java.lang.annotation.Annotation;
+import java.lang.invoke.MethodHandles;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.List;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.k2.Util.exceptions.UtilityError;
 
@@ -16,6 +20,9 @@ import com.k2.Util.exceptions.UtilityError;
  *
  */
 public class ClassUtil {
+	
+	private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
 	
 	/**
 	 * This enumeration identifies whether the list of annotations to check must all be present on the class or if any of the
@@ -169,7 +176,7 @@ public class ClassUtil {
     		// If the given directory does not exist return an empty list of classes
         List<Class<?>> classes = new ArrayList<Class<?>>();
         if (!directory.exists()) {
-        		UtilsLogger.warning("The directory '"+directory.getAbsolutePath()+"' does not exist while scanning package '"+packageName+"'");
+        		logger.warn("The directory '{}' does not exist while scanning package '{}'", directory.getAbsolutePath(), packageName);
             return classes;
         }
         
@@ -193,7 +200,7 @@ public class ClassUtil {
 					if (strict) {
 						throw new UtilityError("No class defined with name '"+findClassForName+"' while scanning package '"+packageName+"'", e);
 					} else {
-						UtilsLogger.warning("No class defined with name '"+findClassForName+"' while scanning package '"+packageName+"'", e);
+						logger.warn("No class defined with name '{}' while scanning package '{}'", findClassForName, packageName);
 						cls = null;
 					}
 				}

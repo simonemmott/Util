@@ -1,12 +1,18 @@
 package com.k2.Util;
 
+import java.lang.invoke.MethodHandles;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
+import java.util.regex.Pattern;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.k2.Util.DateUtil.DateFormat;
+import com.k2.Util.Identity.IdentityUtil;
 
 /**
  * This utility provides static method for handling String values.
@@ -15,6 +21,9 @@ import com.k2.Util.DateUtil.DateFormat;
  *
  */
 public class StringUtil {
+	
+	private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+	
 	/**
 	 * The set of characters from which to build random strings
 	 */
@@ -112,7 +121,13 @@ public class StringUtil {
 				return typeConverters.get(cls).convert(v);
 			}
 		}
-		return null;		
+		try {
+			return IdentityUtil.getIdentity(v, v.toString()).toString();
+		} catch (IllegalAccessException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return v.toString();
 	}
 	/**
 	 * This method converts the given string into a Integer value
@@ -125,7 +140,7 @@ public class StringUtil {
 			Double d = Double.parseDouble(v);
 			return d.intValue();
 		} catch (Throwable e) {
-			UtilsLogger.warning("Unable to convert '"+v+"' into an Integer.");
+			logger.warn("Unable to convert '"+v+"' into an Integer.");
 			return null;
 		}
 	}
@@ -140,7 +155,7 @@ public class StringUtil {
 			Double d = Double.parseDouble(v);
 			return d.longValue();
 		} catch (Throwable e) {
-			UtilsLogger.warning("Unable to convert '"+v+"' into a Long.");
+			logger.warn("Unable to convert '"+v+"' into a Long.");
 			return null;
 		}
 	}
@@ -154,7 +169,7 @@ public class StringUtil {
 		try {
 			return Float.parseFloat(v);
 		} catch (Throwable e) {
-			UtilsLogger.warning("Unable to convert '"+v+"' into a Float.");
+			logger.warn("Unable to convert '"+v+"' into a Float.");
 			return null;
 		}
 	}
@@ -168,7 +183,7 @@ public class StringUtil {
 		try {
 			return Double.parseDouble(v);
 		} catch (Throwable e) {
-			UtilsLogger.warning("Unable to convert '"+v+"' into a Double.");
+			logger.warn("Unable to convert '"+v+"' into a Double.");
 			return null;
 		}
 	}
@@ -197,7 +212,7 @@ public class StringUtil {
 		try {
 			return DateUtil.defaultDateFormatter().parse(v);
 		} catch (Throwable e) {
-			UtilsLogger.warning("Unable to convert '"+v+"' into a Date using the default date formatter with format '"+DateUtil.defaultDateFormatter().toPattern()+"'");
+			logger.warn("Unable to convert '"+v+"' into a Date using the default date formatter with format '"+DateUtil.defaultDateFormatter().toPattern()+"'");
 			return null;
 		}
 	}
@@ -212,7 +227,7 @@ public class StringUtil {
 		try {
 			return DateUtil.dateFormatter(format).parse(v);
 		} catch (Throwable e) {
-			UtilsLogger.warning("Unable to convert '"+v+"' into a Date using the default date formatter with format '"+DateUtil.dateFormatter(format).toPattern()+"'");
+			logger.warn("Unable to convert '"+v+"' into a Date using the default date formatter with format '"+DateUtil.dateFormatter(format).toPattern()+"'");
 			return null;
 		}
 	}
@@ -227,7 +242,7 @@ public class StringUtil {
 		try {
 			return formatter.parse(v);
 		} catch (Throwable e) {
-			UtilsLogger.warning("Unable to convert '"+v+"' into a Date using the default date formatter with format '"+formatter.toPattern()+"'");
+			logger.warn("Unable to convert '"+v+"' into a Date using the default date formatter with format '"+formatter.toPattern()+"'");
 			return null;
 		}
 	}
@@ -243,7 +258,7 @@ public class StringUtil {
 		try {
 			return sdf.parse(v);
 		} catch (Throwable e) {
-			UtilsLogger.warning("Unable to convert '"+v+"' into a Date using the default date formatter with format '"+sdf.toPattern()+"'");
+			logger.warn("Unable to convert '"+v+"' into a Date using the default date formatter with format '"+sdf.toPattern()+"'");
 			return null;
 		}
 	}
@@ -469,6 +484,22 @@ public class StringUtil {
 	 */
 	public static String nvl(String checkValue, String valueIfNull) {
 		return (!isSet(checkValue)) ? valueIfNull : checkValue;
+	}
+	
+	/**
+	 * This method replaces each occurrence of the match string with the replacements in the given order.
+	 * @param input	The string in which to replace the match strings
+	 * @param match	The string to match
+	 * @param replacements	An array of objects with which to replace the match strings
+	 * @return	The input string with the match strings replaces with the string variant of the given replacement 
+	 * using StringUtil.toString(Object)
+	 */
+	public static String replaceAll(String input, String match, Object ... replacements) {
+		String output = input;
+		for (Object replacement : replacements) {
+			output = output.replaceFirst(Pattern.quote("{}"), toString(replacement));
+		}
+		return output;
 	}
 
 

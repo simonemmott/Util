@@ -17,21 +17,25 @@ import java.util.Map;
 public class IdentityUtil {
 	
 	/**
-	 * The static map of identity fields for each class.
+	 * The static map of id fields for each class.
 	 */
 	private static Map<Class<?>, Field> idFieldsMap = new HashMap<Class<?>, Field>();
+	/**
+	 * The static map of identity fields for each class.
+	 */
+	private static Map<Class<?>, Field> identityFieldsMap = new HashMap<Class<?>, Field>();
 	
 	/**
-	 * This internal method extracts from class the field holding the identity value.
+	 * This internal method extracts from class the field holding the id value.
 	 * 
 	 * Identity fields are identified by the javax.persistence.Id annotation. If the annotation is not
 	 * present then a field named 'id' irrespective of case that holds a serializable value is used.
 	 * 
-	 * The if the class does not define an identity field then the classes super class is checked and
-	 * the identify field returned from it if it can be found.
+	 * The if the class does not define an id field then the classes super class is checked and
+	 * the id field returned from it if it can be found.
 	 * 
 	 * @param cls	The class from which to extract the identify field.
-	 * @return	The field holding the identity value. If not suitable field is can be identified then null is returned.
+	 * @return	The field holding the id value. If not suitable field is can be identified then null is returned.
 	 */
 	private static Field getIdField(Class<?> cls) {
 		if (cls == null) return null;
@@ -59,6 +63,115 @@ public class IdentityUtil {
 
 
 	}
+
+	/**
+	 * This internal method extracts from class the field holding the identity value.
+	 * 
+	 * Identity fields are identified by the Identity annotation. If the annotation is not
+	 * present then a Serializable field named 'identity' or a String field 'alias' or 'name' or 'title'
+	 * irrespective of case  is used.
+	 * If multiple fields match the above criteria then the first field in the above order is returned
+	 * 
+	 * The if the class does not define an identity field then the classes super class is checked and
+	 * the identity field returned from it if it can be found.
+	 * 
+	 * If no suitable identity field can be found then the classes id field is returned as identified by
+	 * getIdField(Class)
+	 * 
+	 * @param cls	The class from which to extract the identify field.
+	 * @return	The field holding the identity value. If not suitable field is can be identified then null is returned.
+	 */
+	private static Field getIdentityField(Class<?> cls) {
+		if (cls == null) return null;
+		Field identity = identityFieldsMap.get(cls);
+		if (identity != null) return identity;
+		
+		for (Field f : cls.getDeclaredFields()) {
+			if (f.isAnnotationPresent(Identity.class)) {
+				identityFieldsMap.put(cls, f);
+				return f;
+			}
+		}
+		
+		identity = getIdentityField(cls.getSuperclass());
+		if (identity != null) return identity;
+
+		for (Field f : cls.getDeclaredFields()) {
+			if (Serializable.class.isAssignableFrom(f.getType()) && f.getName().equalsIgnoreCase("identity")) {
+				identityFieldsMap.put(cls, f);
+				return f;
+			}
+		}
+		for (Field f : cls.getDeclaredFields()) {
+			if (String.class.isAssignableFrom(f.getType()) && f.getName().equalsIgnoreCase("alias")) {
+				identityFieldsMap.put(cls, f);
+				return f;
+			}
+		}
+		for (Field f : cls.getDeclaredFields()) {
+			if (String.class.isAssignableFrom(f.getType()) && f.getName().equalsIgnoreCase("name")) {
+				identityFieldsMap.put(cls, f);
+				return f;
+			}
+		}
+		for (Field f : cls.getDeclaredFields()) {
+			if (String.class.isAssignableFrom(f.getType()) && f.getName().equalsIgnoreCase("title")) {
+				identityFieldsMap.put(cls, f);
+				return f;
+			}
+		}
+		
+		return getIdentityField(cls);
+
+
+	}
+
+	/**
+	 * This method gets the serializable id value from an object.
+	 * 
+	 * If no identity field is identifiable in the class or its super classes then the given default value is returned
+	 * 
+	 * @param obj	The object for which to extract the id value
+	 * @param The default value to return if a suitable id value cannot be found
+	 * @return	The id value for the object. If no id field can be identified then the objects simple class name is returned
+	 * @throws IllegalAccessException	If the object is enforcing Java language access control, and the underlying field is inaccessible
+	 */
+	public static String getIdentity(Object obj, String defaultVal) throws IllegalAccessException {
+		
+		if (obj == null) return null;
+		
+		if (Identified.class.isAssignableFrom(obj.getClass())) return ((Identified)obj).getIdentity();
+		
+		Field identity = getIdentityField(obj.getClass());
+		
+		if (identity == null) return defaultVal;
+		
+		return identity.get(obj).toString();
+		
+	}
+	/**
+	 * This method gets the serializable id value from an object.
+	 * 
+	 * If no id field is identifiable in the class or its super classes then the name of the class is returned
+	 * 
+	 * @param obj	The object for which to extract the id value
+	 * @param The default value to return if a suitable id value cannot be found
+	 * @return	The id value for the object. If no id field can be identified then the objects simple class name is returned
+	 * @throws IllegalAccessException	If the object is enforcing Java language access control, and the underlying field is inaccessible
+	 */
+	public static Serializable getId(Object obj, Serializable defaultVal) throws IllegalAccessException {
+		
+		if (obj == null) return null;
+		
+		if (Id.class.isAssignableFrom(obj.getClass())) return ((Id<?,?>)obj).getId();
+		
+		Field id = getIdField(obj.getClass());
+		
+		if (id == null) return defaultVal;
+		
+		return (Serializable) id.get(obj);
+		
+	}
 	
 	/**
 	 * This method gets the serializable id value from an object.
@@ -70,18 +183,8 @@ public class IdentityUtil {
 	 * @throws IllegalAccessException	If the object is enforcing Java language access control, and the underlying field is inaccessible
 	 */
 	public static Serializable getId(Object obj) throws IllegalAccessException {
-		
-		if (obj == null) return null;
-		
-		if (Id.class.isAssignableFrom(obj.getClass())) return ((Id<?,?>)obj).getId();
-		
-		Field id = getIdField(obj.getClass());
-		
-		if (id == null) return obj.getClass().getSimpleName();
-		
-		return (Serializable) id.get(obj);
-		
-		
+		return getId(obj, obj.getClass().getSimpleName());
 	}
+	
 
 }

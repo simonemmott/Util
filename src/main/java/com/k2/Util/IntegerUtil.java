@@ -1,9 +1,13 @@
 package com.k2.Util;
 
+import java.lang.invoke.MethodHandles;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * This utility provides static method for handling Integer values.
@@ -13,6 +17,8 @@ import java.util.Random;
  */
 public class IntegerUtil {
 	
+	private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
 	/**
 	 * This map holds instances of Integer TypeConverters indexed by the class that they convert into Integer values
 	 */

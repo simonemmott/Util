@@ -1,9 +1,13 @@
 package com.k2.Util;
 
+import java.lang.invoke.MethodHandles;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * This utility provides static method for handling Date values.
@@ -12,6 +16,9 @@ import java.util.Map;
  *
  */
 public class DateUtil {
+
+	private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
 	/**
 	 * This enumeration identifies the default data formatter
 	 * 

@@ -5,16 +5,21 @@ import java.io.FileNotFoundException;
 import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.RandomAccessFile;
+import java.lang.invoke.MethodHandles;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
 import java.nio.channels.OverlappingFileLockException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.k2.Util.exceptions.FileLockedException;
+import com.k2.Util.exceptions.UtilityError;
 
 /**
  * This static utility provides methods for handling Files
@@ -23,6 +28,36 @@ import com.k2.Util.exceptions.FileLockedException;
  *
  */
 public class FileUtil {
+	
+	private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+		
+	/**
+	 * This method creates a directory tree structure as defined by the given paths
+	 * 
+	 * @param root	The root directory in which to create the directory tree. If this location is not a directory a UtilityError will be thrown
+	 * @param paths	An array of paths defining all the leaf nodes required in the resultant directory tree
+	 * @return	Null if the root path is null otherwise a File representing the root of the created directory tree.
+	 */
+	public static File buildTree(File root, Path ... paths) {
+		if (root == null) return null;
+		if (!root.exists()) {
+		}
+		if (root.isFile()) {
+			UtilityError err = new UtilityError("The given root directory '{}' is not a directory", root.getAbsolutePath()) ;
+			logger.error("The root is not a directory", err);
+			throw err;
+		}
+		
+		for (Path path : paths) {
+			File f = new File(root.getAbsolutePath()+File.separatorChar+path.toString());
+			if (!f.exists()) {
+				logger.debug("Building path '{}'", f.getAbsolutePath());
+				f.mkdirs();
+			}
+		}
+		
+		return root;
+	}
 	
 	/**
 	 * This method returns the file with the given name from the given directory if it exists
@@ -100,7 +135,7 @@ public class FileUtil {
 				try {
 					raf = new RandomAccessFile(f, "rwd");
 				} catch (FileNotFoundException e) {
-					UtilsLogger.error("This shouldn't happen!", e);
+					logger.error("This shouldn't happen!", e);
 				}
 				fc = raf.getChannel();
 				
@@ -145,25 +180,25 @@ public class FileUtil {
 			} catch (OverlappingFileLockException e) {
 				return true;
 			} catch (Exception e) {
-				UtilsLogger.error("Error checking file lock", e);
+				logger.error("Error checking file lock", e);
 			} finally {
 				if (lock != null)
 					try {
 						lock.release();
 					} catch (IOException e) {
-						UtilsLogger.error("Unable to release lock on '"+f.getAbsolutePath()+"'", e);
+						logger.error("Unable to release lock on '"+f.getAbsolutePath()+"'", e);
 					}
 				if (fc != null)
 					try {
 						fc.close();
 					} catch (IOException e) {
-						UtilsLogger.error("Unable to close file channel on '"+f.getAbsolutePath()+"'", e);
+						logger.error("Unable to close file channel on '"+f.getAbsolutePath()+"'", e);
 					}
 				if (raf != null)
 					try {
 						raf.close();
 					} catch (IOException e) {
-						UtilsLogger.error("Unable to close '"+f.getAbsolutePath()+"'", e);
+						logger.error("Unable to close '"+f.getAbsolutePath()+"'", e);
 					}
 			}
 		}
