@@ -75,9 +75,6 @@ public class IdentityUtil {
 	 * The if the class does not define an identity field then the classes super class is checked and
 	 * the identity field returned from it if it can be found.
 	 * 
-	 * If no suitable identity field can be found then the classes id field is returned as identified by
-	 * getIdField(Class)
-	 * 
 	 * @param cls	The class from which to extract the identify field.
 	 * @return	The field holding the identity value. If not suitable field is can be identified then null is returned.
 	 */
@@ -121,7 +118,7 @@ public class IdentityUtil {
 			}
 		}
 		
-		return getIdField(cls);
+		return null;
 
 
 	}
@@ -144,7 +141,7 @@ public class IdentityUtil {
 		
 		Field identity = getIdentityField(obj.getClass());
 		
-		if (identity == null) return defaultVal;
+		if (identity == null) return getId(obj, defaultVal).toString();
 		
 		return identity.get(obj).toString();
 		
