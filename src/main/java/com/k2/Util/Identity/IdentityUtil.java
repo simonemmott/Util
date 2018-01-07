@@ -5,6 +5,8 @@ import java.lang.reflect.Field;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.k2.Util.exceptions.UtilityError;
+
 /**
  * The identity utility provides static methods for handling id values for objects.
  * 
@@ -179,8 +181,12 @@ public class IdentityUtil {
 	 * @return	The id value for the object. If no id field can be identified then the objects simple class name is returned
 	 * @throws IllegalAccessException	If the object is enforcing Java language access control, and the underlying field is inaccessible
 	 */
-	public static Serializable getId(Object obj) throws IllegalAccessException {
-		return getId(obj, obj.getClass().getSimpleName());
+	public static Serializable getId(Object obj) {
+		try {
+			return getId(obj, obj.getClass().getSimpleName());
+		} catch (IllegalAccessException e) {
+			throw new UtilityError(e);
+		}
 	}
 	
 

@@ -18,6 +18,10 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.hash.HashCode;
+import com.google.common.hash.HashFunction;
+import com.google.common.hash.Hashing;
+import com.google.common.io.Files;
 import com.k2.Util.exceptions.FileLockedException;
 import com.k2.Util.exceptions.UtilityError;
 
@@ -30,6 +34,50 @@ import com.k2.Util.exceptions.UtilityError;
 public class FileUtil {
 	
 	private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+	
+	/**
+	 * This method returns the MD5 has of the given file as a String.
+	 * 
+	 * @param file	The for which to generate an MD5 hash string
+	 * @return	The MD5 hash string for the given file or the empty sting if the file doesn't exist or is a directory
+	 */
+	public static String hash(File file) {
+		if (!file.exists()) {
+			logger.warn("Unable to create MD5 hash for non-existant file '{}'. Empty string returned.", file.getAbsolutePath());
+			return "";
+		}
+		if (file.isDirectory()) {
+			logger.warn("Unable to create MD5 hash for directory '{}'. Empty string returned.", file.getAbsolutePath());
+			return "";
+		}
+		try {
+			return Files.hash(file, Hashing.md5()).toString();
+		} catch (IOException e) {
+			throw new UtilityError(e);
+		}
+	}
+	/**
+	 * This method returns the HashCode of the given file for the given hash function.
+	 * 
+	 * @param file	The file for which to generate the hash code.
+	 * @param hashFunc	The hashing function to use to generate the hosh code
+	 * @return	The generated hash code for the given file or null if given files doesn't exist or is a directory.
+	 */
+	public static HashCode hash(File file, HashFunction hashFunc) {
+		if (!file.exists()) {
+			logger.warn("Unable to create {} hash for non-existant file '{}'. Empty string returned.", hashFunc, file.getAbsolutePath());
+			return null;
+		}
+		if (file.isDirectory()) {
+			logger.warn("Unable to create {} hash for directory '{}'. Empty string returned.", hashFunc, file.getAbsolutePath());
+			return null;
+		}
+		try {
+			return Files.hash(file, hashFunc);
+		} catch (IOException e) {
+			throw new UtilityError(e);
+		}
+	}
 		
 	/**
 	 * This method creates a directory tree structure as defined by the given paths
@@ -146,17 +194,9 @@ public class FileUtil {
 					throw new FileLockedException(f);
 				}
 				
-			} catch (IOException e) {
+			} catch (OverlappingFileLockException | IOException e) {
 				throw new FileLockedException(f);
 			} 
-//			finally {
-//				if (raf != null)
-//					try {
-//						raf.close();
-//					} catch (IOException e) {
-//						UtilsLogger.error("Unable to close '"+f.getAbsolutePath()+"'", e);
-//					}
-//			}
 		}
 		throw new FileLockedException(f);
 	}

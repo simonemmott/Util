@@ -1,7 +1,5 @@
 package com.k2.Util.exceptions;
 
-import java.util.regex.Pattern;
-
 import com.k2.Util.StringUtil;
 
 /**
