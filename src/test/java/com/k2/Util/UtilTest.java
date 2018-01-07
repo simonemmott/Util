@@ -535,6 +535,7 @@ public class UtilTest {
 		Boolean check;
 		Waiter waiter = new Waiter();
 		Waiter parentWaiter;
+		boolean starting = true;
 
 		public void check() {
 			action = Action.CHECK;
@@ -551,6 +552,10 @@ public class UtilTest {
 		@Override
 		public void run() {
 			while (true) {
+				if (starting) {
+					synchronized(parentWaiter) { parentWaiter.notify(); }
+					starting = false;
+				}
 				synchronized(waiter) { try {
 					waiter.wait();
 				} catch (InterruptedException e) {
@@ -581,6 +586,7 @@ public class UtilTest {
 		FileLock lock = null;
 		Waiter waiter = new Waiter();
 		Waiter parentWaiter;
+		boolean starting = true;
 		
 		public Lock(Waiter waiter, File file) {
 			this.parentWaiter = waiter;
@@ -604,6 +610,10 @@ public class UtilTest {
 		public void run() {
 			while (true) {
 				try {
+					if (starting) {
+						synchronized(parentWaiter) { parentWaiter.notify(); }
+						starting = false;
+					}
 					synchronized(waiter) { try {
 						waiter.wait();
 					} catch (InterruptedException e) {
@@ -654,10 +664,12 @@ public class UtilTest {
 		logger.trace("Creating locking thread");
 		Lock lock = new Lock(waiter, sampleTxt);
 		lock.start();
+		synchronized(waiter) { waiter.wait(); }
 		
 		logger.trace("Creating checking thread");
 		Check check = new Check(waiter, sampleTxt);
 		check.start();
+		synchronized(waiter) { waiter.wait(); }
 		
 		assertNull(check.check);
 		assertNull(lock.lock);
