@@ -5,6 +5,7 @@ import java.lang.reflect.Field;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.k2.Util.ClassUtil;
 import com.k2.Util.exceptions.UtilityError;
 
 /**
@@ -44,7 +45,7 @@ public class IdentityUtil {
 		Field id = idFieldsMap.get(cls);
 		if (id != null) return id;
 		
-		for (Field f : cls.getDeclaredFields()) {
+		for (Field f : ClassUtil.getDeclaredFields(cls)) {
 			if (f.isAnnotationPresent(javax.persistence.Id.class)) {
 				idFieldsMap.put(cls, f);
 				return f;
@@ -131,7 +132,7 @@ public class IdentityUtil {
 	 * If no identity field is identifiable in the class or its super classes then the given default value is returned
 	 * 
 	 * @param obj	The object for which to extract the id value
-	 * @param The default value to return if a suitable id value cannot be found
+	 * @param defaultVal The default value to return if a suitable id value cannot be found
 	 * @return	The id value for the object. If no id field can be identified then the objects simple class name is returned
 	 * @throws IllegalAccessException	If the object is enforcing Java language access control, and the underlying field is inaccessible
 	 */
@@ -154,7 +155,7 @@ public class IdentityUtil {
 	 * If no id field is identifiable in the class or its super classes then the name of the class is returned
 	 * 
 	 * @param obj	The object for which to extract the id value
-	 * @param The default value to return if a suitable id value cannot be found
+	 * @param defaultVal The default value to return if a suitable id value cannot be found
 	 * @return	The id value for the object. If no id field can be identified then the objects simple class name is returned
 	 * @throws IllegalAccessException	If the object is enforcing Java language access control, and the underlying field is inaccessible
 	 */
@@ -168,6 +169,8 @@ public class IdentityUtil {
 		
 		if (id == null) return defaultVal;
 		
+		if (!id.isAccessible()) id.setAccessible(true);
+		
 		return (Serializable) id.get(obj);
 		
 	}
@@ -179,7 +182,6 @@ public class IdentityUtil {
 	 * 
 	 * @param obj	The object for which to extract the id value
 	 * @return	The id value for the object. If no id field can be identified then the objects simple class name is returned
-	 * @throws IllegalAccessException	If the object is enforcing Java language access control, and the underlying field is inaccessible
 	 */
 	public static Serializable getId(Object obj) {
 		try {

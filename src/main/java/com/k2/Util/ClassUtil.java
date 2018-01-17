@@ -4,10 +4,13 @@ import java.io.File;
 import java.io.IOException;
 import java.lang.annotation.Annotation;
 import java.lang.invoke.MethodHandles;
+import java.lang.reflect.Field;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Enumeration;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -254,5 +257,68 @@ public class ClassUtil {
     public static String packageNameToPath(String packageName) {
         return packageName.replace('.', File.separatorChar);
     }
-            
+    
+    public static List<Class<?>> getSupertypes(Class<?> cls) {
+    		if (cls == null) return null;
+    		List<Class<?>> h = new ArrayList<Class<?>>();
+    		h.add(cls);
+    		Class<?> sCls = cls.getSuperclass();
+    		while(sCls != null) {
+    			h.add(sCls);
+    			sCls = sCls.getSuperclass();
+    		}
+    		return h;
+    }
+       
+    /**
+     * This static method examines the super types of the two given classes and returns the nearest matching super type
+     * @param cls1	The first class
+     * @param cls2	The second class
+     * @param <T> The type of the shared supertype
+     * @return	The closest supertype of that is the same for both classes
+     */
+    @SuppressWarnings("unchecked")
+	public static <T> Class<T> findMatchingSupertype(Class<? extends T> cls1, Class<? extends T> cls2) {
+    		
+    		if (cls1 == cls2) return (Class<T>)cls1;
+    		List<Class<?>> cls1Hierarchy = getSupertypes(cls1);
+    		List<Class<?>> cls2Hierarchy = getSupertypes(cls2);
+    		Class<?> cls = ObjectUtil.findFirstMatch(cls1Hierarchy, cls2Hierarchy);
+    		return (Class<T>)cls;
+    }
+    /**
+     * The static cache of fields by class
+     * 
+     * Note this cache excludes synthetic fields
+     */
+	private static Map<Class<?>, Field[]> fieldsCache; 
+	/**
+	 * This method returns the static cache of fields by class after initialising it if it has not already been initialised
+	 * @return	The static cache of fields by class
+	 */
+	private static Map<Class<?>, Field[]> getFieldsCache() {
+		if (fieldsCache == null) fieldsCache = new HashMap<Class<?>, Field[]>();
+		return fieldsCache;
+	}
+	/**
+	 * This method gets the declared fields excluding synthetic fields from the utilities static cache
+	 * If the class has not yet had its fields cached by the utility the fields are first extracted using reflection.
+	 * 
+	 * @param cls	The class for which to get the fields
+	 * @return	An array of the declared fields of the class excluding synthetic fields
+	 */
+	public static Field[] getDeclaredFields(Class<?> cls) {
+		if (cls ==null) return null;
+		Field[] fields = getFieldsCache().get(cls);
+		if (fields == null) {
+			fields = cls.getDeclaredFields();
+			List<Field> noSynths = new ArrayList<Field>(fields.length);
+			for (Field f : fields) if (!f.isSynthetic()) noSynths.add(f);
+			fields = noSynths.toArray(new Field[noSynths.size()]);
+			getFieldsCache().put(cls, fields);
+		}
+		return fields;
+	}
+
+
 }

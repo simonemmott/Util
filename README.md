@@ -7,6 +7,7 @@ The following utilities are included in this project
 |-------------|-------------|
 | Version     | The Version interface defines a simple version implementation comprising a major, minor and point version number.|
 | Identity    | The Identity package includes interfaces for identifying objects and a utility to extract id values from objects. |
+| Tuple       | The Tuple package includes implementations of the Tuple interface and a Utility for creating instances of the Tuple interface. |
 | BooleanUtil | The BoooleanUtil provides static methods for handling Boolean values and converting them to other base objects. |
 | ClassUtil   | The ClassUtil provides static methods for dealing with and finding classes. |
 | DateUtil    | The DateUtil provides static methods for handling Date values and converting them to other base objects. |
@@ -16,7 +17,6 @@ The following utilities are included in this project
 | IntegerUtil | The IntegerUtil provides static methods for handling Integer values and converting them to other base objects. |
 | LongUtil    | The LongUtil provides static methods for handling Long values and converting them to other base objects. |
 | StringUtil  | The StringUtil provides static methods for handling Double values and converting them to other base objects. |
-| UtilsLogger | The UtilsLogger provides static methods for dealing with logging from the utility classes. |
 
 Javadoc documentation of this project can be found [here](https://simonemmott.github.io/Util/index.html)
 
@@ -171,6 +171,76 @@ The `getId(...)` method extracts the primary key value from an object. The metho
 1. If the object is annotated with `javax.persistence.Id` then the value of the `@Id` annotated field is extracted and returned.
 1. If the object contains a field named `id` with a `Serializable` type the value of that field is extracted and returned.
 1. The objects simple class name is returned
+
+## Tuple Package
+The tuple package several implementations of the Tuple interface.
+
+| Implementation             | Description |
+|----------------------------|-------------|
+| `Unit`                     | A Tuple with a single member. This is an alternative name to the Tuple1 implementation |
+| `Pair`                     | A Tuple with a pair of members. This is an alternative name to the Tuple2 implementation |
+| `Triple`                   | A Tuple with 3 members. This is an alternative name to the Tuple3 implementation |
+| `Quadruple`                | A Tuple with 4 members. This is an alternative name to the Tuple4 implementation |
+| `Quintuple`                | A Tuple with 5 members. This is an alternative name to the Tuple5 implementation |
+| `Sextuple`                 | A Tuple with 6 members. This is an alternative name to the Tuple6 implementation |
+| `Septuple`                 | A Tuple with 7 members. This is an alternative name to the Tuple7 implementation |
+| `Octuple`                  | A Tuple with 8 members. This is an alternative name to the Tuple8 implementation |
+| `Tuple1` through `Tuple26` | These tuples with the number of members indicated by the training digits. Each of the classes implement the Tuple interface using public final individual fields for each member of the Tuple. Instantiation of these Tuples is permitted locally rather than through the TupleUtil Class *see below*. As such they can be declared with generic type values making fast access to the Tuples members using a minimum of java code |
+| `GenericTuple`             | This implementation of the Tuple interface uses a private map to hold the Tuples members. Consequently it cannot be declared with generic type values and access to the members is only permitted through the Tuple interface methods |
+
+The code below shows creating and using a new instance of the Triple Tuple
+```java
+Triple<Integer, String, Boolean> t = new Triple<Integer, String, Boolean>(1, "hello", true);
+
+System.out.println("Triple.a = "+t.a);
+System.out.println("Triple.b = "+t.b);
+System.out.println("Triple.c = "+t.c);
+```
+Which produces the following output
+```text
+Triple.a = 1
+Triple.b = hello
+Triple.c = true
+```
+Exactly the same output can be generated with the following code to define the `Tuple` t
+```java
+Tuple3<Integer, String, Boolean> t = new Triple<Integer, String, Boolean>(1, "hello", true);
+```
+However using the `TupleUtil` class the following code
+```java
+Tuple t = TupleUtil(1, "hello", true);
+
+for (TupleElement<?> e : t.getElements()) {
+    System.out.println("Tuple."+e.getAlias()+" = "+t.get(e));
+}
+```
+Produces the following output
+```text
+Tuple.a = 1
+Tuple.b = hello
+Tuple.c = true
+```
+The same output can be produced with the following code
+```java
+Tuple t = TupleUtil(1, "hello", true);
+
+System.out.println("Tuple.a = "+t.get(TupleUtil.tupleElement("a", Integer.class));
+System.out.println("Tuple.b = "+t.get(TupleUtil.tupleElement("b", String.class));
+System.out.println("Tuple.c = "+t.get(TupleUtil.tupleElement("c", Boolean.class));
+```
+
+
+In addition to the `Tuple` implementations above this package also provides a utility class `TupleUtil` for creating instances of the `Tuple` interface.
+
+The `TupleUtil` provides the following static methods
+
+| Method                                     | Description |
+|--------------------------------------------|-------------|
+| `Tuple aliasedTuple(String[] Object[])`    | This method creates an instance of the Tuple interface with members for each object in the given array of objects aliased by the aliases in the given array of strings. |
+| `Tuple tuple(Object... )`                  | This method creates an instance of the Tuple interface with members for each object in the given array of objects aliased by 'a', 'b', ... 'aa', 'ab', ... etc. |
+| `TupleElement tupleElement(Class)`         | This method creates an instance of the TupleElement interface to reference a member of the given class with a null alias |
+| `TupleElement tupleElement(String, Class)` | This method creates an instance of the TupleElement interface to reference a member of the given class with the given alias |
+
 
 ## BooleanUtil
 
@@ -528,12 +598,20 @@ The StringUtil provides the following static methods for handling Strings
 | `boolean isSet(String)`                          | Returns true if the given String is not null and contains non white space characters |
 | `String[] words(String)`                         | Splits the given string into words on any white space characters |
 | `String safeWord(String)`                        | Returns the given String with all its unsafe characters removed. See below for more details |
+| `String verySafeWord(String)`                    | Returns the given String with all its non letter characters removed. See below for more details |
 | `String aliasCase(String)`                       | Returns the given String in alias case. See below |
 | `String camelCase(String)`                       | Returns the given String in camel case. See below |
 | `String classCase(String)`                       | Returns the given String in class case. See below |
 | `String staticCase(String)`                      | Returns the given String in static case. See below |
 | `String kebebCase(String)`                       | Returns the given String in kebab case. See below |
-| `String replaceAll(String, String, Object ... )` | Returns first String replacing each occurrence of the second string with the string variants of the given objects |
+| `String replaceAll(String, String, Object[] )`   | Returns first String replacing each occurrence of the second string with the string variants of the given objects |
+| `String concatenate(String, Object[] )`          | Returns the given objects concatenated together joined by the given string |
+| `String braceConcatenate(String, String, String, Object[] )` | Returns the given objects concatenated together joined by the second string and bracketed by the first and third strings |
+| `String lastChar(String)`                                    | Returns last character of the given string |
+| `String plural(String)`                                      | Returns the plural value of the given string |
+| `String splitCamelCase(String)`                              | Returns the given string split into words by capitalisation according to the CamelCase style. Repeated capital letters are treated as anacronyms and kept together except for the last Letter which becomes the first letter of a new word if it is the the last letter of the given string |
+| `int stringToIndex(String)` | Returns the integer value of the given string where 'a' = 0, 'b' = 1, 'z' = 25, 'ab' = 26 etc |
+| `String indexToString(int)` | Returns the sting value of the given index where 0 = 'a', 1 = 'b', 25 = 'z', 26 = 'ab' etc |
 
 ### Alias Case
 
@@ -674,6 +752,9 @@ The following methods are defined
 | `Class[] getClasses(String, boolean, AnnotationCheck, Class ... )` | This method returns all the classes in the named package and sub packages and optionally throws an exception if there is a class on the class path that was unable to found in the class loader where the class is annotated with the defined annotations |
 | `Class[] getClasses(String, AnnotationCheck, Class ... )`          | This method returns all the classes in the named package and sub packages if they are annotated with the defined annotations |
 | `Class[] getClasses(String, Class ... )`                           | This method returns all the classes in the named package and sub packages if they are annotated with all the given annotations |
+| `List<Class> getSupertypes(Class)`                                 | This method returns all the supertypes of the given class including the given class with List[0] being the given class |
+| `Class findMatchingSupertype(List<Class>, List<Class>)`            | This method identifies the first common class in the list of classes |
+| `Field[] getDeclaredFields(Class)`                                 | This method retrieves the non synthetic fields from the given class |
 
 The ClassUtil defines the following methods of checking multiple annotations against a class in the enumeration `AnnotationCheck`
 
@@ -681,6 +762,17 @@ The ClassUtil defines the following methods of checking multiple annotations aga
 |-------|-------------|
 | ALL   | The found class must be annotated with all the given annotations |
 | ANY   | The found class must match any of the given annotations |
+
+## ObjectUtil 
+
+The ClassUtil provides static methods for dealing with Objects
+
+The following methods are defined
+
+| Method                                   | Description |
+|------------------------------------------|-------------|
+| `<T> copy(T, T)`                         | This method copies all the field values from the first instance to the same field in the second instance  |
+| `<T> T findFirstMatch(List<T>, List<T>)` | This method returns the first element that occurs in both lists or null if there are no matching elements | 
 
 
 

@@ -374,6 +374,22 @@ public class StringUtil {
 		return output;
 	}
 	/**
+	 * This method ensures that only safe characters exist in the word.
+	 * 
+	 * If the word only contains unsafe characters then an 6 character random string is returned
+	 * 
+	 * @param word	The word to make safe
+	 * @return	The word with unsafe characters removed
+	 */
+	public static String verySafeWord(String word) {
+		String output = "";
+		for (char c : word.toCharArray()) {
+			if (VERY_SAFE_CHARS.indexOf(c) != -1) output = output+c;
+		}
+		if ("".equals(output)) output = verySafeWord(random(10));
+		return output;
+	}
+	/**
 	 * This method converts a String into alias case.
 	 * 
 	 * Alias case has a lower case initial character for the first word and an upper case initial character
@@ -501,6 +517,125 @@ public class StringUtil {
 		}
 		return output;
 	}
-
+	/**
+	 * This method concatenates the given clauses separated by the given join.
+	 * 
+	 * Note the join is only included in the output between each clause.
+	 * 
+	 * @param join	The string to join the clauses together
+	 * @param clauses	An array of object clauses to concatenate together
+	 * @return The clauses concatenated together with the join string between each clause
+	 */
+	public static String concatenate(String join, Object ... clauses) {
+		return braceConcatenate("", join, "", clauses);
+	}
+	/**
+	 * This method concatenates the given clauses separated by the given join string, prefixed with the given open string and post fixed with close string
+	 * 
+	 * @param open	The opening string e.g '{'
+	 * @param join	The joining string e.g. ', '
+	 * @param close	The closing string e.g. '}'
+	 * @param clauses	The objects to concatenate together using the result of StingUtil.toString(Object) to convert to a String
+	 * @return	The resultant concatenation
+	 */
+	public static String braceConcatenate(String open, String join, String close, Object ... clauses) {
+		StringBuilder sb = new StringBuilder();
+		sb.append(open);
+		boolean first = true;
+		for (Object clause : clauses) {
+			if (!first) {
+				sb.append(join);
+			}
+			first = false;
+			sb.append(toString(clause));
+		}
+		sb.append(close);
+		return sb.toString();
+	}
+	/**
+	 * This method returns the last character of a string
+	 * @param string		The string to test
+	 * @return	The last character of the string
+	 */
+	public static String lastChar(String string) {
+		if (!isSet(string)) return "";
+		return string.substring(string.length() -1);
+	}
+	/**
+	 * This method returns the plural of the given singular string
+	 * @param singular	The singular name for which the plural variant is required
+	 * @return	The plural variant of the singular string or the singular string if it already ends with 'es'
+	 */
+	public static String plural(String singular) {
+		if (!isSet(singular)) return "";
+		if (singular.endsWith("es")) return singular;
+		if (singular.endsWith("ES")) return singular;
+		if (singular.endsWith("'s")) return singular.substring(0, singular.length()-2)+"s'";
+		if (singular.endsWith("'S")) return singular.substring(0, singular.length()-2)+"S'";
+		if (singular.endsWith("s")) return singular+"es";
+		if (singular.endsWith("S")) return singular+"ES";
+		if (singular.endsWith("y")) return singular.substring(0, singular.length()-1)+"ies";
+		if (singular.endsWith("Y")) return singular.substring(0, singular.length()-1)+"IES";
+		if (lastChar(singular).toUpperCase().equals(lastChar(singular))) return singular+"S";
+		return singular+"s";
+	}
+	/**
+	 * This method splits the given camel case string into words
+	 * @param camelCase	A string in camel case
+	 * @return The given camel case string as separate words
+	 */
+	public static String splitCamelCase(String camelCase) {
+	   return camelCase.replaceAll(
+	      String.format("%s|%s|%s",
+	         "(?<=[A-Z])(?=[A-Z][a-z])",
+	         "(?<=[^A-Z])(?=[A-Z])",
+	         "(?<=[A-Za-z])(?=[^A-Za-z])"
+	      ),
+	      " "
+	   );
+	}
+	
+	private static final String LOWER_SALT = "abcdefghijklmnopqrstuvwxyz";
+	
+	private static char getlowerChar(int i) {
+		if (i < 0 || i > 25) throw new IllegalArgumentException("invalid charcter index, "+i);
+		return LOWER_SALT.toCharArray()[i];
+	}
+	/**
+	 * This static method converts the given string into an index value in a base26 manner with a - z having values 0 - 25 respectively
+	 * 
+	 * Non alpha numeric values are stripped from the string and it is converted to lower case
+	 * 
+	 * @param index	The string to convert to an index value
+	 * @return The integer value of the given base26 string
+	 */
+	public static int stringToIndex(String index) {
+		String safe = verySafeWord(index).toLowerCase();
+		int i = 0;
+		int hold = 0;
+		for (char c : safe.toCharArray()) {
+			hold = hold * 26;
+			i = LOWER_SALT.indexOf(c)+1;
+			hold = hold + i;
+		}
+		return hold-1;
+	}
+	/**
+	 * This static method converts the given integer value in to a base26 string with a - z having values 0 - 25 respectively
+	 * @param i		The integer value to convert	
+	 * @return		The resultant base26 string
+	 */
+	public static String indexToString(int i) {
+		if (i < 0 ) throw new IllegalArgumentException("invalid charcter index, "+i);
+		int calc = i;
+		String out = "";
+		while (true) {
+			out = getlowerChar(calc % 26)+out;
+			calc = calc - (26+calc % 26);
+			calc = calc / 26;
+			if (calc < 0) break;
+		}
+		return out;
+	}
 
 }

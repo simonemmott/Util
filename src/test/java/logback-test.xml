@@ -8,8 +8,11 @@
     </encoder>
   </appender>
 
-  <!-- <logger name="com.k2.FilesystemEntityManager.FemTestClient" level="off"/> -->
-  <root level="warn">
+  <logger name="com.k2.Util.ObjectUtil" level="warn"/>
+  <logger name="com.k2.Util.ClassUtil" level="warn"/>
+  <logger name="com.k2.Util.StringUtil" level="warn"/>
+  <logger name="com.k2.Util.FileUtil" level="warn"/>
+  <root level="debug">
     <appender-ref ref="STDOUT" />
   </root>
 </configuration>
