@@ -17,6 +17,7 @@ import java.util.Scanner;
 
 import javax.persistence.Tuple;
 import javax.persistence.TupleElement;
+import javax.persistence.criteria.CriteriaBuilder.Trimspec;
 
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -169,5 +170,22 @@ public class StringTest {
 			assertEquals(rnd, StringUtil.stringToIndex(StringUtil.indexToString(rnd)));
 		}
 	}
+
+	@Test
+	public void trimTest() {
+		assertEquals("hello world!", StringUtil.trim(Trimspec.BOTH, ' ', "   hello world!   "));
+		assertEquals("hello world!   ", StringUtil.trim(Trimspec.LEADING, ' ', "   hello world!   "));
+		assertEquals("   hello world!", StringUtil.trim(Trimspec.TRAILING, ' ', "   hello world!   "));
+		assertEquals("hello world!", StringUtil.trim(Trimspec.BOTH, '.', "...hello world!..."));
+		assertEquals("hello world!...", StringUtil.trim(Trimspec.LEADING, '.', "...hello world!..."));
+		assertEquals("...hello world!", StringUtil.trim(Trimspec.TRAILING, '.', "...hello world!..."));
+		assertEquals("hello world!", StringUtil.trim(Trimspec.BOTH, 's', "ssshello world!sss"));
+		assertEquals("hello world!sss", StringUtil.trim(Trimspec.LEADING, 's', "ssshello world!sss"));
+		assertEquals("ssshello world!", StringUtil.trim(Trimspec.TRAILING, 's', "ssshello world!sss"));
+		assertEquals("hello world!", StringUtil.trim(Trimspec.BOTH, '\\', "\\\\hello world!\\\\"));
+		assertEquals("hello world!\\\\", StringUtil.trim(Trimspec.LEADING, '\\', "\\\\hello world!\\\\"));
+		assertEquals("\\\\hello world!", StringUtil.trim(Trimspec.TRAILING, '\\', "\\\\hello world!\\\\"));
+	}
+	
 
 }

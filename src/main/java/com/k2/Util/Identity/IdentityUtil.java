@@ -1,7 +1,10 @@
 package com.k2.Util.Identity;
 
 import java.io.Serializable;
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -189,6 +192,29 @@ public class IdentityUtil {
 		} catch (IllegalAccessException e) {
 			throw new UtilityError(e);
 		}
+	}
+	
+	public static String toString(Serializable key) {
+		return key.toString();
+	}
+	
+	private static Map<Class<? extends Serializable>, KeyConstructor> keyConstructors = new HashMap<Class<? extends Serializable>, KeyConstructor>();
+	
+	public static Serializable toKey(Class<? extends Serializable> keyCls, String keyStr) {
+		KeyConstructor keyConstructor = keyConstructors.get(keyCls);
+		if (keyConstructor == null) {
+			keyConstructor = KeyConstructor.keyConstructor(keyCls);
+			keyConstructors.put(keyCls, keyConstructor);
+		}
+		return keyConstructor.getKey(keyStr);
+		
+	}
+	
+	@SuppressWarnings("unchecked")
+	public static Class<? extends Serializable> getIdFieldType(Class<?> cls) {
+		Field idField = getIdField(cls);
+		if (idField == null) return null;
+		return (Class<? extends Serializable>) idField.getType();
 	}
 	
 

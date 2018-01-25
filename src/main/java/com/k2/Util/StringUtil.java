@@ -8,6 +8,8 @@ import java.util.Map;
 import java.util.Random;
 import java.util.regex.Pattern;
 
+import javax.persistence.criteria.CriteriaBuilder.Trimspec;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -637,5 +639,56 @@ public class StringUtil {
 		}
 		return out;
 	}
+	
+	/**
+	 * This static method trims the leading and/or trailing chars from the given string according to the given trim spec.
+	 * @param trimSpec	Whether to trim leading, trailing of both
+	 * @param trimChar	The character to trim from the string
+	 * @param s			The String to trim
+	 * @return			The trimmed string
+	 */
+	public static String trim(Trimspec trimSpec, char trimChar, String s) {
+		if (s == null) return null;
+		
+		if (trimChar == ' ') {
+			switch(trimSpec) {
+			case BOTH:
+				return s.trim();
+			case LEADING:
+				return s.replaceAll("^\\s+", "");
+			case TRAILING:
+				return s.replaceAll("\\s+$", "");
+			}
+			
+		} else {
+			String escape = "";
+			if (containsChar(".[]\\&+-*", trimChar)) {
+				escape = "\\";
+			}
+			switch(trimSpec) {
+			case BOTH:
+				return s.replaceAll("^"+escape+trimChar+"+", "").replaceAll(escape+trimChar+"+$", "");
+			case LEADING:
+				return s.replaceAll("^"+escape+trimChar+"+", "");
+			case TRAILING:
+				return s.replaceAll(escape+trimChar+"+$", "");
+			}
+			
+		}
+		
+		return s;
+	}
 
+	/**
+	 * This static method returns true if the given string contains the given char
+	 * @param s	The string to test
+	 * @param c	The char to search for
+	 * @return	True if the string contains the char
+	 */
+	public static boolean containsChar(String s, char c) {
+		for (int i=0; i<s.length(); i++) {
+			if (c == s.charAt(i)) return true;
+		}
+		return false;
+	}
 }

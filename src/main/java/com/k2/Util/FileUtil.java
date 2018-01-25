@@ -244,5 +244,9 @@ public class FileUtil {
 		}
 		return false;
 	}
+	
+	public static String getBasename(File f) {
+		return Files.getNameWithoutExtension(f.getName());
+	}
 
 }
