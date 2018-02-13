@@ -193,13 +193,24 @@ public class IdentityUtil {
 			throw new UtilityError(e);
 		}
 	}
-	
+	/**
+	 * Convert the given key into a string
+	 * @param key	The key to express as a String
+	 * @return	The string representation of the given key
+	 */
 	public static String toString(Serializable key) {
 		return key.toString();
 	}
-	
+	/**
+	 * A map of key constructors for indexed by the class of the keys that they construct
+	 */
 	private static Map<Class<? extends Serializable>, KeyConstructor> keyConstructors = new HashMap<Class<? extends Serializable>, KeyConstructor>();
-	
+	/**
+	 * This static method converts the given string representation of a key into an instance of the given key class and 
+	 * @param keyCls		The class of the key that is to be generatated from the string representation of the key
+	 * @param keyStr		The string representation of the key
+	 * @return			An instance of the key class generated from the string representation of the key
+	 */
 	public static Serializable toKey(Class<? extends Serializable> keyCls, String keyStr) {
 		KeyConstructor keyConstructor = keyConstructors.get(keyCls);
 		if (keyConstructor == null) {
@@ -209,7 +220,11 @@ public class IdentityUtil {
 		return keyConstructor.getKey(keyStr);
 		
 	}
-	
+	/**
+	 * This method returns the Serializable class of the Id field of the given class
+	 * @param cls	The class for which the class of the Id field is required
+	 * @return		The class that is used to represent the Id of the given class
+	 */
 	@SuppressWarnings("unchecked")
 	public static Class<? extends Serializable> getIdFieldType(Class<?> cls) {
 		Field idField = getIdField(cls);

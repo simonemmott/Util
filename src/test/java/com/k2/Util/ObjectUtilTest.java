@@ -72,6 +72,7 @@ public class ObjectUtilTest {
 	private class A {
 		private Integer id;
 		public String name;
+		public String getIdAndName() { return id+name; }
 		A(int id, String name) {this.id = id; this.name = name;}
 		public int getId() { return id; }
 	}
@@ -94,6 +95,14 @@ public class ObjectUtilTest {
 		assertEquals("This is an A", a.name);
 		assertEquals("This is an A", a2.name);
 
+	}
+	
+	@Test
+	public void getTest() {
+		A a = new A(1, "hello");
+		assertEquals(new Integer(1), ObjectUtil.get(a, Integer.class, "id"));
+		assertEquals("hello", ObjectUtil.get(a, String.class, "name"));
+		assertEquals("1hello", ObjectUtil.get(a, String.class, "idAndName"));
 	}
 
 }

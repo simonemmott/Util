@@ -5,8 +5,13 @@ import java.io.IOException;
 import java.lang.annotation.Annotation;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Field;
+import java.lang.reflect.Member;
+import java.lang.reflect.Method;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
@@ -16,6 +21,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.k2.Util.exceptions.UtilityError;
+import com.k2.Util.tuple.Pair;
 
 /**
  * The ClassUtil provides static methods for dealing with and finding classes
@@ -257,7 +263,11 @@ public class ClassUtil {
     public static String packageNameToPath(String packageName) {
         return packageName.replace('.', File.separatorChar);
     }
-    
+    /**
+     * This static method lists the super types of the given class in order starting with the given class
+     * @param cls	The class for which the list of supertypes is required
+     * @return	A List of the classes that are the super types of the given class
+     */
     public static List<Class<?>> getSupertypes(Class<?> cls) {
     		if (cls == null) return null;
     		List<Class<?>> h = new ArrayList<Class<?>>();
@@ -287,6 +297,48 @@ public class ClassUtil {
     		return (Class<T>)cls;
     }
     /**
+     * This is a cache of all of the methods for each class that has been queried 
+     */
+	private static Map<Class<?>, Method[]> methodsCache; 
+	/**
+	 * This method gets the methods cache initializing it if it hasn't yet been instantiated
+	 * @return	The methods cache
+	 */
+	private static Map<Class<?>, Method[]> getMethodsCache() {
+		if (methodsCache == null) methodsCache = new HashMap<Class<?>, Method[]>();
+		return methodsCache;
+	}
+	/**
+	 * This static method returns an array of the methods callable from the given class
+	 * @param cls	The class for which the callable methods are required
+	 * @return	An array of the callable methods for the given class
+	 */
+	public static Method[] getAllMethods(Class<?> cls) {
+		List<Method> methods = new ArrayList<Method>();
+		for (Class<?> c : getSupertypes(cls)) {
+			if(!c.equals(Object.class)) methods.addAll(Arrays.asList(getDeclaredMethods(c)));
+		}
+		return methods.toArray(new Method[methods.size()]);
+	}
+	/**
+	 * Thist statica method returns the methods defined on the given class
+	 * @param cls	The class for which the defined method are required
+	 * @return	An array of the methods defined on the given class
+	 */
+	public static Method[] getDeclaredMethods(Class<?> cls) {
+		if (cls ==null) return null;
+		Method[] methods = getMethodsCache().get(cls);
+		if (methods == null) {
+			methods = cls.getDeclaredMethods();
+			List<Method> noSynths = new ArrayList<Method>(methods.length);
+			for (Method m : methods) if (!m.isSynthetic()) noSynths.add(m);
+			methods = noSynths.toArray(new Method[noSynths.size()]);
+			getMethodsCache().put(cls, methods);
+		}
+		return methods;
+	}
+
+    /**
      * The static cache of fields by class
      * 
      * Note this cache excludes synthetic fields
@@ -299,6 +351,18 @@ public class ClassUtil {
 	private static Map<Class<?>, Field[]> getFieldsCache() {
 		if (fieldsCache == null) fieldsCache = new HashMap<Class<?>, Field[]>();
 		return fieldsCache;
+	}
+	/**
+	 * This static method gets all the fields available through the given class
+	 * @param cls	The class for which the available fields is required
+	 * @return	An array of the available fields.
+	 */
+	public static Field[] getAllFields(Class<?> cls) {
+		List<Field> fields = new ArrayList<Field>();
+		for (Class<?> c : getSupertypes(cls)) {
+			fields.addAll(Arrays.asList(getDeclaredFields(c)));
+		}
+		return fields.toArray(new Field[fields.size()]);
 	}
 	/**
 	 * This method gets the declared fields excluding synthetic fields from the utilities static cache
@@ -319,6 +383,129 @@ public class ClassUtil {
 		}
 		return fields;
 	}
+	/**
+	 * This static method extracts the field definition from the given class.
+	 * @param cls		The class for which the field is required 
+	 * @param alias		The alias (name) of the required field
+	 * @return			The Field for the given alias.
+	 * 					If there is no field for the given alias in the given class an unchecked UtilityError is thrown
+	 */
+	public static Field getField(Class<?> cls, String alias) {
+		for (Field f : getAllFields(cls)) {
+			if (f.getName().equals(alias)) return f;
+		}
+		throw new UtilityError("The alias {} does not exists as a field in class {}", alias, cls.getName());
+	}
 
+	/**
+	 * This method extracts the generic type of a field that is defined with generic type arguements
+	 * @param fld	The field from which to extract the generic type argument
+	 * @param pos	The 0 based position of the generic type argument to extract
+	 * @return		The class of the generic type of the given field at the given position
+	 */
+	@SuppressWarnings("rawtypes")
+	public static Class getFieldGenericTypeClass(Field fld, int pos) {
+		if (pos < 0) { 
+			logger.warn("Unable to identify generic type for field {}.{} for a negative positional value: {}", 
+				fld.getDeclaringClass().getCanonicalName(), 
+				fld.getName(),
+				pos);
+			return null;
+		}
+		Type fType = fld.getGenericType();
+		if (fType instanceof ParameterizedType) {
+			ParameterizedType pType = (ParameterizedType)fType;
+			Type[] fGenericTypes = pType.getActualTypeArguments();
+			if (pos >= fGenericTypes.length) {
+				logger.warn("Unable to identify generic type for field {}.{} positional value: {}", 
+					fld.getDeclaringClass().getCanonicalName(), 
+					fld.getName(),
+					pos);
+				return null;
+			}
+			Type gType = fGenericTypes[pos];
+			if (gType instanceof Class) {
+				return (Class)gType;
+			}
+			logger.warn("Field {}.{} has an unidentifiable type {} at position {}",
+					fld.getDeclaringClass().getCanonicalName(), 
+					fld.getName(),
+					gType.getTypeName(),
+					pos);
+		}
+		return null;
+	}
+
+	/**
+	 * A cache of the Getters indexed by class and alias. Where alias is the field name or the sections of the method name 
+	 * following an initial 'get' String with the first letter of the remaining string in lower case
+	 */
+	private static Map<Pair<Class<?>, String>, Getter<?,?>> getters = new HashMap<Pair<Class<?>, String>, Getter<?,?>>();
+	/**
+	 * This static method returns an instance of Getter for the given object class, value class and alias
+	 * If a suitable MethodGetter can be idenified then the MethodGetter is returned otherwise a FieldGetter is returned
+	 * if a suitable field can be identified. If no suitable method or field can be identified a null is returned
+	 * @param objectClass	The class of the object for which a getter is required
+	 * @param valueClass		The class of the value to be returned by the resultant getter
+	 * @param alias			The alias of the field or method whose value is to be returned by the getter
+	 * @return				A Getter instance for the given values or null if no suitable getter can be identified from the 
+	 * 						given object class
+	 * @param <E> The class of the object through which the getter will be invoked
+	 * @param <V> The class of the values returned by calls to get()
+	 */
+	@SuppressWarnings("unchecked")
+	public static <E,V> Getter<E,V> getGetter(Class<E> objectClass, Class<V> valueClass, String alias) {
+		Pair<Class<?>, String> pair = new Pair<Class<?>, String>(objectClass, alias);
+		Getter<E,V> g = (Getter<E, V>) getters.get(pair);
+		if (g == null) {
+			logger.trace("Getter not yet defined");
+			for (Method meth : ClassUtil.getAllMethods(objectClass)) {
+				logger.trace("Checking method {}.{}", objectClass.getName(), meth.getName());
+				if (		meth.getName().equals("get"+StringUtil.initialUpperCase(alias)) &&
+						valueClass.isAssignableFrom(meth.getReturnType()) &&
+						meth.getParameterTypes().length==0) {
+					logger.trace("Found method {}.{}", objectClass.getName(), meth.getName());
+					g = new MethodGetter<E,V>(objectClass, valueClass, meth);
+					break;
+				}
+			}
+			if (g == null) {
+				logger.trace("Getter still not defined");
+				for (Field f : ClassUtil.getAllFields(objectClass)) {
+					logger.trace("Checking field {}.{}:{} against {}:{}", objectClass.getName(), f.getName(),f.getType(), alias, valueClass.getName());
+					if (f.getName().equals(alias)&&valueClass.isAssignableFrom(f.getType())) {
+						logger.trace("Found field {}.{}", objectClass.getName(), f.getName());
+						g = new FieldGetter<E,V>(objectClass, valueClass, f);
+						break;
+					}
+				}
+			}
+			if (g != null) {
+				logger.trace("Caching {} getter {}.{}", g.getType(), g.getThroughClass(), g.getAlias());
+				getters.put(pair, g);
+		
+			}
+		} else {
+			if (!valueClass.isAssignableFrom(g.getJavaType())) {
+				logger.trace("The cached getter {} does not provide the required type {}", g, valueClass.getName());
+				g = null;
+			}
+		}
+		logger.trace("Returning getter {}", g);
+		return g;
+	}
+	/**
+	 * This static method checks to see whether a getter is available for the given value class and alias on the given object class
+	 * @param objectClass	The class of the object for which a getter is required
+	 * @param valueClass		The class of the value to be returned by the resultant getter
+	 * @param alias			The alias of the field or method invoked by the getter
+	 * @return				True if a getter can be identified from the given object class for the given value class and alias.
+	 * 
+	 * @param <V> The class of the object returned by calls to get()
+	 */
+	public static <V> boolean canGet(Class<?> objectClass, Class<?> valueClass, String alias) {
+		return (getGetter(objectClass, valueClass, alias) != null);
+	}
+	
 
 }

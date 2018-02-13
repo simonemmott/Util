@@ -104,12 +104,27 @@ public class ClassUtilTest {
 	
 	private class ABC extends AB {
 		int c;
+		AB ab;
+		AB getAAndB() { return ab; }
 		ABC(int a, int b, int c) { super(a,b); this.c=c; }
 	}
 
 	private class AD extends A {
 		int d;
 		AD(int a, int d) { super(a); this.d=d; }
+	}
+	
+	@Test
+	public void canGetTest() {
+		assertTrue(ClassUtil.canGet(ABC.class, int.class, "a"));
+		assertTrue(ClassUtil.canGet(ABC.class, int.class, "b"));
+		assertTrue(ClassUtil.canGet(ABC.class, int.class, "c"));
+		assertTrue(ClassUtil.canGet(ABC.class, AB.class, "ab"));
+		assertTrue(ClassUtil.canGet(ABC.class, A.class, "ab"));
+		assertTrue(ClassUtil.canGet(ABC.class, AB.class, "aAndB"));
+		assertTrue(ClassUtil.canGet(ABC.class, A.class, "aAndB"));
+		assertFalse(ClassUtil.canGet(ABC.class, String.class, "c"));
+		assertFalse(ClassUtil.canGet(ABC.class, int.class, "d"));
 	}
 	
 	@Test

@@ -1,10 +1,13 @@
 package com.k2.Util;
 
 import java.lang.invoke.MethodHandles;
+import java.math.BigDecimal;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
+
+import javax.jws.WebParam.Mode;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,6 +20,7 @@ import org.slf4j.LoggerFactory;
  */
 public class DoubleUtil {
 	
+	@SuppressWarnings("unused")
 	private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
 	/**
@@ -153,6 +157,31 @@ public class DoubleUtil {
 		return (checkValue==null) ? valueIfNull : checkValue;
 	}
 
+	/**
+	 * This static method rounds the given double to the number of decimal places specified by the precision rounding half up
+	 * @param unrounded	The un-rounded double value
+	 * @param precision	The number of decimal places to round to
+	 * @return			The given decimal number rounded to the given precision
+	 */
+	public static Double round(Double unrounded, int precision) {
+		return round(unrounded, precision, BigDecimal.ROUND_HALF_UP);
+	}
 
+	/**
+	 * This static method rounds the given double to the number of decimal places specified by the given precision using the
+	 * given rounding mode.
+	 * 
+	 * @see BigDecimal
+	 * 
+	 * @param unrounded		The un-rounded doouble value
+	 * @param precision		The number of decimal places to round to
+	 * @param roundingMode	The rounding e.g. BigDecimal.ROUND_HALF_UP
+	 * @return				The given decimal number rounded to the given precision
+	 */
+	public static Double round(Double unrounded, int precision, int roundingMode) {
+		BigDecimal db = new BigDecimal(unrounded);
+		BigDecimal rounded = db.setScale(precision, roundingMode);
+		return rounded.doubleValue();
+	}
 
 }
