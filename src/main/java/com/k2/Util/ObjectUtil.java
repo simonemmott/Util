@@ -35,6 +35,7 @@ public class ObjectUtil {
 	 */
 	@SuppressWarnings("unchecked")
 	public static <E,V> V get(E obj, Class<V> valueClass, String alias) {
+		if (obj == null) return null;
 		Getter<E,V> g = (Getter<E, V>) ClassUtil.getGetter(obj.getClass(), valueClass, alias);
 		if (g == null) return null;
 		
@@ -49,6 +50,7 @@ public class ObjectUtil {
 	 * @return				The value returned by the underlying field or method
 	 */
 	public static boolean canGet(Object obj, Class<?> valueClass, String alias) {
+		if (obj == null) return false;
 		return ClassUtil.canGet(obj.getClass(), valueClass, alias);
 	}
 	
