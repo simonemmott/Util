@@ -525,14 +525,14 @@ public class ClassUtil {
 	}
 	
 	public static Member getGetterMember(Class<?> cls, Class<?> type, String alias) {
-		for (Method m : cls.getDeclaredMethods()) {
+		for (Method m : getAllMethods(cls)) {
 			if (type.isAssignableFrom(m.getReturnType()) 
 					&& m.getName().equals("get"+StringUtil.initialUpperCase(alias))
 					&& m.getParameterCount() == 0) {
 				return m;
 			}
 		}
-		for (Field f : cls.getDeclaredFields()) {
+		for (Field f : getAllFields(cls)) {
 			if (type.isAssignableFrom(f.getType()) && f.getName().equals(alias)) {
 				return f;
 			}
@@ -541,14 +541,14 @@ public class ClassUtil {
 	}
 
 	public static Member getSetterMember(Class<?> cls, Class<?> type, String alias) {
-		for (Method m : cls.getDeclaredMethods()) {
+		for (Method m : getAllMethods(cls)) {
 			if (m.getName().equals("set"+StringUtil.initialUpperCase(alias))
 					&& m.getParameterCount() == 1
 					&& m.getParameters()[0].getType().isAssignableFrom(type)) {
 				return m;
 			}
 		}
-		for (Field f : cls.getDeclaredFields()) {
+		for (Field f : getAllFields(cls)) {
 			if (type.isAssignableFrom(f.getType()) && f.getName().equals(alias)) {
 				return f;
 			}
