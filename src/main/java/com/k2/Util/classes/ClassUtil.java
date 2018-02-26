@@ -1,7 +1,9 @@
-package com.k2.Util;
+package com.k2.Util.classes;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.lang.annotation.Annotation;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Field;
@@ -9,6 +11,7 @@ import java.lang.reflect.Member;
 import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
+import java.net.URI;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -17,9 +20,19 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import javax.tools.FileObject;
+import javax.tools.ForwardingJavaFileManager;
+import javax.tools.JavaFileManager;
+import javax.tools.JavaFileObject;
+import javax.tools.SimpleJavaFileObject;
+import javax.tools.ToolProvider;
+import javax.tools.JavaFileObject.Kind;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.k2.Util.ObjectUtil;
+import com.k2.Util.StringUtil;
 import com.k2.Util.exceptions.UtilityError;
 import com.k2.Util.tuple.Pair;
 
@@ -314,11 +327,20 @@ public class ClassUtil {
 	 * @return	An array of the callable methods for the given class
 	 */
 	public static Method[] getAllMethods(Class<?> cls) {
-		List<Method> methods = new ArrayList<Method>();
+		List<MethodSignature> signatures = new ArrayList<MethodSignature>();
 		for (Class<?> c : getSupertypes(cls)) {
-			if(!c.equals(Object.class)) methods.addAll(Arrays.asList(getDeclaredMethods(c)));
+			if(!c.equals(Object.class)) {
+				for (Method m : getDeclaredMethods(c)) {
+					MethodSignature ms = MethodSignature.forMethod(m);
+					if (!signatures.contains(ms)) signatures.add(ms);
+				}
+			}
 		}
-		return methods.toArray(new Method[methods.size()]);
+		Method[] methods = new Method[signatures.size()];
+		for (int i=0; i<signatures.size(); i++) {
+			methods[i] = signatures.get(i).getMethod();
+		}
+		return methods;
 	}
 	/**
 	 * Thist statica method returns the methods defined on the given class
@@ -330,9 +352,12 @@ public class ClassUtil {
 		Method[] methods = getMethodsCache().get(cls);
 		if (methods == null) {
 			methods = cls.getDeclaredMethods();
-			List<Method> noSynths = new ArrayList<Method>(methods.length);
-			for (Method m : methods) if (!m.isSynthetic()) noSynths.add(m);
-			methods = noSynths.toArray(new Method[noSynths.size()]);
+			List<Method> out = new ArrayList<Method>(methods.length);
+			for (Method m : methods) if (!m.isSynthetic()) {
+				if (!m.isAccessible()) m.setAccessible(true);
+				out.add(m);
+			}
+			methods = out.toArray(new Method[out.size()]);
 			getMethodsCache().put(cls, methods);
 		}
 		return methods;
@@ -364,6 +389,7 @@ public class ClassUtil {
 		}
 		return fields.toArray(new Field[fields.size()]);
 	}
+
 	/**
 	 * This method gets the declared fields excluding synthetic fields from the utilities static cache
 	 * If the class has not yet had its fields cached by the utility the fields are first extracted using reflection.
@@ -376,9 +402,12 @@ public class ClassUtil {
 		Field[] fields = getFieldsCache().get(cls);
 		if (fields == null) {
 			fields = cls.getDeclaredFields();
-			List<Field> noSynths = new ArrayList<Field>(fields.length);
-			for (Field f : fields) if (!f.isSynthetic()) noSynths.add(f);
-			fields = noSynths.toArray(new Field[noSynths.size()]);
+			List<Field> out = new ArrayList<Field>(fields.length);
+			for (Field f : fields) if (!f.isSynthetic()&&!f.getName().equals("serialVersionUID")) {
+				if (!f.isAccessible()) f.setAccessible(true);
+				out.add(f);
+			}
+			fields = out.toArray(new Field[out.size()]);
 			getFieldsCache().put(cls, fields);
 		}
 		return fields;
@@ -459,27 +488,15 @@ public class ClassUtil {
 		Getter<E,V> g = (Getter<E, V>) getters.get(pair);
 		if (g == null) {
 			logger.trace("Getter not yet defined");
-			for (Method meth : ClassUtil.getAllMethods(objectClass)) {
-				logger.trace("Checking method {}.{}", objectClass.getName(), meth.getName());
-				if (		meth.getName().equals("get"+StringUtil.initialUpperCase(alias)) &&
-						valueClass.isAssignableFrom(meth.getReturnType()) &&
-						meth.getParameterTypes().length==0) {
-					logger.trace("Found method {}.{}", objectClass.getName(), meth.getName());
-					g = new MethodGetter<E,V>(objectClass, valueClass, meth);
-					break;
+			Member m = getGetterMember(objectClass, valueClass, alias);
+			if (m != null) {
+				if (m instanceof Method) {
+					g = new MethodGetter<E,V>(objectClass, valueClass, (Method)m);					
+				} else if (m instanceof Field){
+					g = new FieldGetter<E,V>(objectClass, valueClass, (Field)m);
 				}
 			}
-			if (g == null) {
-				logger.trace("Getter still not defined");
-				for (Field f : ClassUtil.getAllFields(objectClass)) {
-					logger.trace("Checking field {}.{}:{} against {}:{}", objectClass.getName(), f.getName(),f.getType(), alias, valueClass.getName());
-					if (f.getName().equals(alias)&&valueClass.isAssignableFrom(f.getType())) {
-						logger.trace("Found field {}.{}", objectClass.getName(), f.getName());
-						g = new FieldGetter<E,V>(objectClass, valueClass, f);
-						break;
-					}
-				}
-			}
+			
 			if (g != null) {
 				logger.trace("Caching {} getter {}.{}", g.getType(), g.getThroughClass(), g.getAlias());
 				getters.put(pair, g);
@@ -507,5 +524,103 @@ public class ClassUtil {
 		return (getGetter(objectClass, valueClass, alias) != null);
 	}
 	
+	public static Member getGetterMember(Class<?> cls, Class<?> type, String alias) {
+		for (Method m : cls.getDeclaredMethods()) {
+			if (type.isAssignableFrom(m.getReturnType()) 
+					&& m.getName().equals("get"+StringUtil.initialUpperCase(alias))
+					&& m.getParameterCount() == 0) {
+				return m;
+			}
+		}
+		for (Field f : cls.getDeclaredFields()) {
+			if (type.isAssignableFrom(f.getType()) && f.getName().equals(alias)) {
+				return f;
+			}
+		}
+		return null;
+	}
+
+	public static Member getSetterMember(Class<?> cls, Class<?> type, String alias) {
+		for (Method m : cls.getDeclaredMethods()) {
+			if (m.getName().equals("set"+StringUtil.initialUpperCase(alias))
+					&& m.getParameterCount() == 1
+					&& m.getParameters()[0].getType().isAssignableFrom(type)) {
+				return m;
+			}
+		}
+		for (Field f : cls.getDeclaredFields()) {
+			if (type.isAssignableFrom(f.getType()) && f.getName().equals(alias)) {
+				return f;
+			}
+		}
+		return null;
+	}
+	
+	public static Method getMethod(Class<?> cls, String name, Class<?> ... parameterTypes) {
+		try {
+			return cls.getDeclaredMethod(name, parameterTypes);
+		} catch (NoSuchMethodException | SecurityException e) {
+			throw new UtilityError("The method signature {} does not match a method in class {}", MethodSignature.forSignature(name, parameterTypes), cls.getName());
+		}
+	}
+
+	public static Method getMethod(Class<?> cls, MethodSignature methodSignature) {
+		try {
+			return cls.getDeclaredMethod(methodSignature.getName(), methodSignature.getParameterTypes());
+		} catch (NoSuchMethodException | SecurityException e) {
+			throw new UtilityError("The method signature {} does not match a method in class {}", methodSignature, cls.getName());
+		}
+	}
+
+	@SuppressWarnings({ "unchecked", "restriction" })
+	public static <T> Class<? extends T> createClassFromString(Class<T> extendsClass, String packageName, String className, String source) {
+
+		String fullClassName = packageName.replace('.', '/')+"/"+className;
+		
+		ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+		
+		SimpleJavaFileObject simpleJavaFileObject = new SimpleJavaFileObject(URI.create(fullClassName + ".java"), Kind.SOURCE) {
+
+			@Override
+			public CharSequence getCharContent(boolean ignoreEncodingErrors) {
+				return source;
+			}
+			
+			@Override
+			public OutputStream openOutputStream() throws IOException{
+				return byteArrayOutputStream;
+			}
+		};
+		
+		@SuppressWarnings({ "rawtypes" })
+		JavaFileManager javaFileManager = new ForwardingJavaFileManager(
+				ToolProvider.getSystemJavaCompiler().getStandardFileManager(null, null, null)) {
+						@Override
+						public JavaFileObject getJavaFileForOutput(
+								Location location,String className,
+								JavaFileObject.Kind kind,
+								FileObject sibling)  {
+							return simpleJavaFileObject;
+						}
+		};
+		
+		ToolProvider.getSystemJavaCompiler().getTask(null, javaFileManager, null, null, null, ObjectUtil.singletonList(simpleJavaFileObject)).call();
+		
+		byte[] bytes = byteArrayOutputStream.toByteArray();
+		
+		try {
+			Field f = sun.misc.Unsafe.class.getDeclaredField("theUnsafe");
+			
+			f.setAccessible(true);
+			
+			sun.misc.Unsafe unsafe = (sun.misc.Unsafe) f.get(null);
+			
+			return (Class<? extends T>) unsafe.defineClass(fullClassName, bytes, 0, bytes.length, extendsClass.getClassLoader(), extendsClass.getProtectionDomain());
+			
+		} catch (NoSuchFieldException | SecurityException | IllegalArgumentException | IllegalAccessException e) {
+			throw new UtilityError("Unable to generate class {}.{} from source \n{}\n", e, packageName, className, source);
+		}
+
+	}
 
 }

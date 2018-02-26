@@ -1,8 +1,10 @@
-package com.k2.Util;
+package com.k2.Util.classes;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
+import com.k2.Util.StringUtil;
+import com.k2.Util.classes.Getter.Type;
 import com.k2.Util.exceptions.UtilityError;
 
 /**

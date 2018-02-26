@@ -1,4 +1,4 @@
-package com.k2.Util;
+package com.k2.Util.classes;
 
 import java.lang.reflect.Field;
 

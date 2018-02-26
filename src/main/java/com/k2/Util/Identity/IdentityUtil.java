@@ -1,14 +1,19 @@
 package com.k2.Util.Identity;
 
 import java.io.Serializable;
+import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Member;
 import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.Map;
 
-import com.k2.Util.ClassUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.k2.Util.classes.ClassUtil;
 import com.k2.Util.exceptions.UtilityError;
 
 /**
@@ -22,14 +27,16 @@ import com.k2.Util.exceptions.UtilityError;
  */
 public class IdentityUtil {
 	
+	private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
 	/**
 	 * The static map of id fields for each class.
 	 */
-	private static Map<Class<?>, Field> idFieldsMap = new HashMap<Class<?>, Field>();
+	private static Map<Class<?>, Member> idMembersMap = new HashMap<Class<?>, Member>();
 	/**
 	 * The static map of identity fields for each class.
 	 */
-	private static Map<Class<?>, Field> identityFieldsMap = new HashMap<Class<?>, Field>();
+	private static Map<Class<?>, Member> identityMembersMap = new HashMap<Class<?>, Member>();
 	
 	/**
 	 * This internal method extracts from class the field holding the id value.
@@ -43,24 +50,43 @@ public class IdentityUtil {
 	 * @param cls	The class from which to extract the identify field.
 	 * @return	The field holding the id value. If not suitable field is can be identified then null is returned.
 	 */
-	private static Field getIdField(Class<?> cls) {
+	private static Member getIdMember(Class<?> cls) {
 		if (cls == null) return null;
-		Field id = idFieldsMap.get(cls);
+		Member id = idMembersMap.get(cls);
 		if (id != null) return id;
 		
 		for (Field f : ClassUtil.getDeclaredFields(cls)) {
-			if (f.isAnnotationPresent(javax.persistence.Id.class)) {
-				idFieldsMap.put(cls, f);
-				return f;
+			if (f.isAnnotationPresent(javax.persistence.Id.class) || f.isAnnotationPresent(javax.persistence.EmbeddedId.class)) {
+				if (f.getType() instanceof Serializable) {
+					idMembersMap.put(cls, f);
+					return f;
+				} else {
+					throw new UtilityError("The annotated id field {}.{} is not Serializable", cls.getName(), f.getName());
+				}
 			}
 		}
 		
-		id = getIdField(cls.getSuperclass());
+		for (Method m : ClassUtil.getDeclaredMethods(cls)) {
+			if (m.isAnnotationPresent(javax.persistence.Id.class) || m.isAnnotationPresent(javax.persistence.EmbeddedId.class)) {
+				if (m.getReturnType() instanceof Serializable) {
+					if (m.getParameterCount() == 0) {
+						idMembersMap.put(cls, m);
+						return m;
+					} else {
+						throw new UtilityError("The annotated id method {}.{} is not a zero arg method", cls.getName(), m.getName());
+					}
+				} else {
+					throw new UtilityError("The annotated id method {}.{} does not return a Serializable value", cls.getName(), m.getName());
+				}
+			}
+		}
+		
+		id = getIdMember(cls.getSuperclass());
 		if (id != null) return id;
 
 		for (Field f : cls.getDeclaredFields()) {
 			if (Serializable.class.isAssignableFrom(f.getType()) && f.getName().equalsIgnoreCase("id")) {
-				idFieldsMap.put(cls, f);
+				idMembersMap.put(cls, f);
 				return f;
 			}
 		}
@@ -84,43 +110,34 @@ public class IdentityUtil {
 	 * @param cls	The class from which to extract the identify field.
 	 * @return	The field holding the identity value. If not suitable field is can be identified then null is returned.
 	 */
-	private static Field getIdentityField(Class<?> cls) {
+	private static Member getIdentityMember(Class<?> cls) {
 		if (cls == null) return null;
-		Field identity = identityFieldsMap.get(cls);
+		Member identity = identityMembersMap.get(cls);
 		if (identity != null) return identity;
+		
+		for (Method m : cls.getDeclaredMethods()) {
+			if (m.isAnnotationPresent(Identity.class)) {
+				identityMembersMap.put(cls, m);
+				return m;
+			}
+		}
 		
 		for (Field f : cls.getDeclaredFields()) {
 			if (f.isAnnotationPresent(Identity.class)) {
-				identityFieldsMap.put(cls, f);
+				identityMembersMap.put(cls, f);
 				return f;
 			}
 		}
 		
-		identity = getIdentityField(cls.getSuperclass());
+		identity = getIdentityMember(cls.getSuperclass());
 		if (identity != null) return identity;
 
-		for (Field f : cls.getDeclaredFields()) {
-			if (Serializable.class.isAssignableFrom(f.getType()) && f.getName().equalsIgnoreCase("identity")) {
-				identityFieldsMap.put(cls, f);
-				return f;
-			}
-		}
-		for (Field f : cls.getDeclaredFields()) {
-			if (String.class.isAssignableFrom(f.getType()) && f.getName().equalsIgnoreCase("alias")) {
-				identityFieldsMap.put(cls, f);
-				return f;
-			}
-		}
-		for (Field f : cls.getDeclaredFields()) {
-			if (String.class.isAssignableFrom(f.getType()) && f.getName().equalsIgnoreCase("name")) {
-				identityFieldsMap.put(cls, f);
-				return f;
-			}
-		}
-		for (Field f : cls.getDeclaredFields()) {
-			if (String.class.isAssignableFrom(f.getType()) && f.getName().equalsIgnoreCase("title")) {
-				identityFieldsMap.put(cls, f);
-				return f;
+		String[] identityAliases = {"identity", "alias", "name", "title"};
+		for (String alias : identityAliases ) {
+			Member m = ClassUtil.getGetterMember(cls, String.class, alias);
+			if (m != null) {
+				identityMembersMap.put(cls, m);
+				return m;
 			}
 		}
 		
@@ -128,7 +145,7 @@ public class IdentityUtil {
 
 
 	}
-
+	
 	/**
 	 * This method gets the serializable id value from an object.
 	 * 
@@ -137,19 +154,34 @@ public class IdentityUtil {
 	 * @param obj	The object for which to extract the id value
 	 * @param defaultVal The default value to return if a suitable id value cannot be found
 	 * @return	The id value for the object. If no id field can be identified then the objects simple class name is returned
-	 * @throws IllegalAccessException	If the object is enforcing Java language access control, and the underlying field is inaccessible
 	 */
-	public static String getIdentity(Object obj, String defaultVal) throws IllegalAccessException {
+	public static String getIdentity(Object obj, String defaultVal) {
 		
 		if (obj == null) return null;
 		
 		if (Identified.class.isAssignableFrom(obj.getClass())) return ((Identified)obj).getIdentity();
 		
-		Field identity = getIdentityField(obj.getClass());
+		Member identity = getIdentityMember(obj.getClass());
 		
-		if (identity == null) return getId(obj, defaultVal).toString();
+		if (identity != null) {
+			if (identity instanceof Method) {
+				Method m = (Method)identity;
+				try {
+					return (String) m.invoke(obj);
+				} catch (IllegalArgumentException | InvocationTargetException | IllegalAccessException e) {
+					logger.error("Unable to execute method {}.{}", e, obj.getClass().getName(), m.getName());
+				}
+			} else if (identity instanceof Field) {
+				Field f = (Field)identity;
+				try {
+					return (String) f.get(obj);
+				} catch (IllegalArgumentException | IllegalAccessException e) {
+					logger.error("Unable to get value frpm field {}.{}", e, obj.getClass().getName(), f.getName());
+				}
+			}
+		} 
 		
-		return identity.get(obj).toString();
+		return getId(obj, defaultVal).toString();
 		
 	}
 	/**
@@ -160,21 +192,37 @@ public class IdentityUtil {
 	 * @param obj	The object for which to extract the id value
 	 * @param defaultVal The default value to return if a suitable id value cannot be found
 	 * @return	The id value for the object. If no id field can be identified then the objects simple class name is returned
-	 * @throws IllegalAccessException	If the object is enforcing Java language access control, and the underlying field is inaccessible
 	 */
-	public static Serializable getId(Object obj, Serializable defaultVal) throws IllegalAccessException {
+	public static Serializable getId(Object obj, Serializable defaultVal) {
 		
 		if (obj == null) return null;
 		
 		if (Id.class.isAssignableFrom(obj.getClass())) return ((Id<?,?>)obj).getId();
 		
-		Field id = getIdField(obj.getClass());
+		Member id = getIdMember(obj.getClass());
 		
 		if (id == null) return defaultVal;
 		
-		if (!id.isAccessible()) id.setAccessible(true);
+		if (id instanceof Field) {
+			Field f = (Field)id;
+			if (!f.isAccessible()) f.setAccessible(true);
+			try {
+				return (Serializable) f.get(obj);
+			} catch (IllegalArgumentException | IllegalAccessException e) {
+				logger.error("Unable to get value from id field {}.{}", e, obj.getClass().getName(), f.getName());
+			}
+		} else if (id instanceof Method) {
+			Method m = (Method)id;
+			if (!m.isAccessible()) m.setAccessible(true);
+			try {
+				return (Serializable) m.invoke(obj);
+			} catch (IllegalArgumentException | InvocationTargetException | IllegalAccessException e) {
+				logger.error("Unable to invoke the id method {}.{}", e, obj.getClass().getName(), m.getName());
+				e.printStackTrace();
+			}
+		}
 		
-		return (Serializable) id.get(obj);
+		return defaultVal;
 		
 	}
 	
@@ -187,11 +235,7 @@ public class IdentityUtil {
 	 * @return	The id value for the object. If no id field can be identified then the objects simple class name is returned
 	 */
 	public static Serializable getId(Object obj) {
-		try {
-			return getId(obj, obj.getClass().getSimpleName());
-		} catch (IllegalAccessException e) {
-			throw new UtilityError(e);
-		}
+		return getId(obj, obj.getClass().getSimpleName());
 	}
 	/**
 	 * Convert the given key into a string
@@ -227,9 +271,16 @@ public class IdentityUtil {
 	 */
 	@SuppressWarnings("unchecked")
 	public static Class<? extends Serializable> getIdFieldType(Class<?> cls) {
-		Field idField = getIdField(cls);
-		if (idField == null) return null;
-		return (Class<? extends Serializable>) idField.getType();
+		Member id = getIdMember(cls);
+		if (id == null) return null;
+		if (id instanceof Field) {
+			Field idField = (Field)id;
+			return (Class<? extends Serializable>) idField.getType();
+		} else if (id instanceof Method) {
+			Method idMethod = (Method)id;
+			return (Class<? extends Serializable>) idMethod.getReturnType();
+		}
+		return null;
 	}
 	
 

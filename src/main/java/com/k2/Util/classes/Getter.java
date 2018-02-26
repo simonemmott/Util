@@ -1,4 +1,4 @@
-package com.k2.Util;
+package com.k2.Util.classes;
 
 /**
  * The Getter interface defines a generic interface for getting values from a field or getter method. 

@@ -1,9 +1,9 @@
 package com.k2.Util;
 
-import com.k2.Util.ClassUtil;
-import com.k2.Util.ClassUtil.AnnotationCheck;
 import com.k2.Util.Sample.TestAnnotation1;
 import com.k2.Util.Sample.TestAnnotation2;
+import com.k2.Util.classes.ClassUtil;
+import com.k2.Util.classes.ClassUtil.AnnotationCheck;
 
 public class ClassUtilExample {
 	

@@ -1,6 +1,9 @@
 package com.k2.Util;
 
+import java.io.UnsupportedEncodingException;
 import java.lang.invoke.MethodHandles;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashMap;
@@ -123,13 +126,7 @@ public class StringUtil {
 				return typeConverters.get(cls).convert(v);
 			}
 		}
-		try {
-			return IdentityUtil.getIdentity(v, v.toString()).toString();
-		} catch (IllegalAccessException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		return v.toString();
+		return IdentityUtil.getIdentity(v, v.toString()).toString();
 	}
 	/**
 	 * This method converts the given string into a Integer value
@@ -504,6 +501,26 @@ public class StringUtil {
 		return (!isSet(checkValue)) ? valueIfNull : checkValue;
 	}
 	
+	private static String customEncode(String unEncoded, Map<Character, String> map) {
+		StringBuilder sb = new StringBuilder();
+		for (char c : unEncoded.toCharArray()) {
+			if (map.containsKey(c)) {
+				sb.append(map.get(c));
+			} else {
+				sb.append(c);
+			}
+		}
+		return sb.toString();
+	}
+	
+	private static Map<Character, String> dollarEncodeMap;
+	private static Map<Character, String> dollarEncodeMap() {
+		if (dollarEncodeMap != null) return dollarEncodeMap;
+		dollarEncodeMap = new HashMap<Character, String>();
+		dollarEncodeMap.put('$', "+%24");
+		return dollarEncodeMap;
+	}
+	
 	/**
 	 * This method replaces each occurrence of the match string with the replacements in the given order.
 	 * @param input	The string in which to replace the match strings
@@ -515,7 +532,16 @@ public class StringUtil {
 	public static String replaceAll(String input, String match, Object ... replacements) {
 		String output = input;
 		for (Object replacement : replacements) {
-			output = output.replaceFirst(Pattern.quote("{}"), toString(replacement));
+			try {
+				output = output.replaceFirst(Pattern.quote("{}"), customEncode(toString(replacement), dollarEncodeMap()));
+			} catch (Throwable e) {
+				logger.warn("Unable to replace {} with '"+replacement+"'");
+				try {
+					output = output.replaceFirst(Pattern.quote("{}"), URLEncoder.encode(toString(replacement), StandardCharsets.UTF_8.toString()));
+				} catch (UnsupportedEncodingException e1) {
+					logger.error("Failed to URL encode '"+toString(replacement)+"'");
+				}
+			}
 		}
 		return output;
 	}

@@ -4,7 +4,9 @@ import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import javax.persistence.criteria.CriteriaBuilder.Trimspec;
 
@@ -12,6 +14,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.k2.Util.Identity.IdentityUtil;
+import com.k2.Util.classes.ClassUtil;
+import com.k2.Util.classes.Getter;
 import com.k2.Util.exceptions.UtilityError;
 
 /**
@@ -357,6 +361,28 @@ public class ObjectUtil {
 			throw new UtilityError("Error putting embedded object {} in {}", e, obj, embeddedObj);
 		}
 
+	}
+	
+	/**
+	 * Produce a list containing the single item
+	 * @param item	The single item in the list
+	 * @return	A list containing just the single item
+	 */
+	public static <T> List<T> singletonList(T item) {
+		List<T> list = new ArrayList<T>(1);
+		list.add(item);
+		return list;
+	}
+
+	/**
+	 * Produce a set containing the single item
+	 * @param item	The single item in the set
+	 * @return	A set containing just the single item
+	 */
+	public static <T> Set<T> singletonSet(T item) {
+		Set<T> set = new HashSet<T>(1);
+		set.add(item);
+		return set;
 	}
 
 }

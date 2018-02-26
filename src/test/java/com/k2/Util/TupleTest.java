@@ -22,7 +22,6 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.k2.Util.ClassUtil.AnnotationCheck;
 import com.k2.Util.DateUtil.DateFormat;
 import com.k2.Util.Identity.IdentityUtil;
 import com.k2.Util.Sample.Bar;
@@ -36,6 +35,7 @@ import com.k2.Util.Sample.TooMuch;
 import com.k2.Util.Version.Increment;
 import com.k2.Util.Version.Version;
 import com.k2.Util.Version.VersionExample;
+import com.k2.Util.classes.ClassUtil.AnnotationCheck;
 import com.k2.Util.exceptions.FileLockedException;
 import com.k2.Util.tuple.Tuple3;
 import com.k2.Util.tuple.TupleUtil;
