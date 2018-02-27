@@ -40,6 +40,7 @@ public class MethodSignature implements Comparable<MethodSignature>{
 	/**
 	 * Create a method signature for a given method.
 	 * @param meth	The method from which the signature is required
+	 * @return The method signature for the given method
 	 */
 	public static MethodSignature forMethod(Method meth) { return new MethodSignature(meth); }
 
@@ -47,6 +48,7 @@ public class MethodSignature implements Comparable<MethodSignature>{
 	 * Create a method signature for the given method and array of parameter types
 	 * @param name				The name of the method
 	 * @param parameterTypes		The types of the methods parameters
+	 * @return The method signature for the given method name and parameter types
 	 */
 	public static MethodSignature forSignature(String name, Class<?> ... parameterTypes) { return new MethodSignature(name, parameterTypes); }
 	

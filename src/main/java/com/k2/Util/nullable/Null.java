@@ -39,7 +39,8 @@ public class Null {
 	 * This method cases the Null utility to generate a 'null' value for each of the given classes
 	 * @param rType	How to handle existing 'null' values when registering null values a given class
 	 * @param cls	The class that should have a null instance registered with the Null utility
-	 * @return
+	 * @return	The null instance representing null values for this class
+	 * @param <C> The type of null instance value returned
 	 */
 	@SuppressWarnings("unchecked")
 	public static <C> C registerClass(RegisterType rType, Class<C> cls) {
@@ -154,6 +155,7 @@ public class Null {
 	 * Get the null instance for the given class
 	 * @param cls	The class for which the null instance is required
 	 * @return		The null instance for the given class
+	 * @param <C> 	The type of the null instance returned
 	 */
 	@SuppressWarnings("unchecked")
 	public static <C> C getNull(Class<C> cls) {

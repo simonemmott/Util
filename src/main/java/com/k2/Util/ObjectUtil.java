@@ -367,6 +367,7 @@ public class ObjectUtil {
 	 * Produce a list containing the single item
 	 * @param item	The single item in the list
 	 * @return	A list containing just the single item
+	 * @param <T> The type of the object in the singleton list
 	 */
 	public static <T> List<T> singletonList(T item) {
 		List<T> list = new ArrayList<T>(1);
@@ -378,6 +379,7 @@ public class ObjectUtil {
 	 * Produce a set containing the single item
 	 * @param item	The single item in the set
 	 * @return	A set containing just the single item
+	 * @param <T> The type of the object in the singleton set
 	 */
 	public static <T> Set<T> singletonSet(T item) {
 		Set<T> set = new HashSet<T>(1);
