@@ -23,7 +23,7 @@ public class Dependency extends Pair<String, String> implements Comparable<Depen
 	 * @param cls	The depends on class
 	 */
 	public Dependency(Class<?> cls) {
-		super(cls.getPackage().getName(), cls.getSimpleName());
+		super((cls==null)?"":(cls.getPackage()==null)?"":cls.getPackage().getName(), (cls==null)?"":cls.getSimpleName());
 	}
 	
 	/**

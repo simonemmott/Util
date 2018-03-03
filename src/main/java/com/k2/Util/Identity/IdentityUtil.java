@@ -146,6 +146,9 @@ public class IdentityUtil {
 
 	}
 	
+	public static String getIdentity(Object obj) {
+		return getIdentity(obj, obj.getClass().getSimpleName());
+	}
 	/**
 	 * This method gets the serializable id value from an object.
 	 * 

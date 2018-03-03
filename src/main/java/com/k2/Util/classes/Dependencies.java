@@ -19,7 +19,18 @@ public class Dependencies {
 	 * @return	True if the given class needs to be included as an import clause
 	 */
 	public static boolean requiresImport(Class<?> cls) {
-		if (cls.isPrimitive() || cls.getName().startsWith("java.lang.")) return false;
+		return requiresImport(cls,null);
+	}
+	
+	public static boolean requiresImport(Class<?> cls, Package pack) {
+		if (cls == null) 
+			return false;
+		if (cls.isPrimitive()) 
+			return false;
+		if (pack != null && cls.getPackage().equals(pack)) 
+			return false;
+		if (cls.getName().startsWith("java.lang.")) 
+			return false;
 		return true;
 	}
 	
@@ -28,8 +39,11 @@ public class Dependencies {
 	 * @param classes	The classes to add to the set of dependencies
 	 */
 	public void add(Class<?> ... classes) {
-		for (Class<?> cls : classes)
-			dependencies.add(new Dependency(cls));
+		for (Class<?> cls : classes) {
+			if (cls != null) {
+				dependencies.add(new Dependency(cls));
+			}
+		}
 	}
 	
 	/**

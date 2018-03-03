@@ -465,6 +465,38 @@ public class ClassUtil {
 		return null;
 	}
 
+	public static Class getMethodGenericTypeClass(Method method, int pos) {
+		if (pos < 0) { 
+			logger.warn("Unable to identify generic type for method {}.{} for a negative positional value: {}", 
+					method.getDeclaringClass().getCanonicalName(), 
+					method.getName(),
+					pos);
+			return null;
+		}
+		Type mType = method.getGenericReturnType();
+		if (mType instanceof ParameterizedType) {
+			ParameterizedType pType = (ParameterizedType)mType;
+			Type[] mGenericTypes = pType.getActualTypeArguments();
+			if (pos >= mGenericTypes.length) {
+				logger.warn("Unable to identify generic type for method {}.{} positional value: {}", 
+						method.getDeclaringClass().getCanonicalName(), 
+						method.getName(),
+						pos);
+				return null;
+			}
+			Type gType = mGenericTypes[pos];
+			if (gType instanceof Class) {
+				return (Class)gType;
+			}
+			logger.warn("method {}.{} has an unidentifiable type {} at position {}",
+					method.getDeclaringClass().getCanonicalName(), 
+					method.getName(),
+					gType.getTypeName(),
+					pos);
+		}
+		return null;
+	}
+
 	/**
 	 * A cache of the Getters indexed by class and alias. Where alias is the field name or the sections of the method name 
 	 * following an initial 'get' String with the first letter of the remaining string in lower case
@@ -622,5 +654,4 @@ public class ClassUtil {
 		}
 
 	}
-
 }
