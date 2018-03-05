@@ -65,4 +65,8 @@ public interface Version {
 	 */
 	public int point();
 
+	public static Version staticVersion(int major, int minor, int point, int build) {
+		return new StaticVersion(major, minor, point, build);
+	}
+
 }

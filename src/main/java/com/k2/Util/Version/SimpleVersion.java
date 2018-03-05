@@ -51,14 +51,14 @@ public class SimpleVersion implements Version {
 			return true;
 		if (obj == null)
 			return false;
-		if (getClass() != obj.getClass())
+		if ( ! (obj instanceof Version))
 			return false;
-		SimpleVersion other = (SimpleVersion) obj;
-		if (major != other.major)
+		Version other = (Version) obj;
+		if (major != other.major())
 			return false;
-		if (minor != other.minor)
+		if (minor != other.minor())
 			return false;
-		if (point != other.point)
+		if (point != other.point())
 			return false;
 		return true;
 	}
