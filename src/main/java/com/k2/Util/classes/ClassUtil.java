@@ -13,6 +13,8 @@ import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.net.URI;
 import java.net.URL;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Enumeration;
@@ -276,6 +278,21 @@ public class ClassUtil {
     public static String packageNameToPath(String packageName) {
         return packageName.replace('.', File.separatorChar);
     }
+    
+    public static Path packageNameToRelativePath(String packageName) {
+    	
+    		logger.trace("Converting {} to a relative Path", packageName);
+    		String start;
+    		String[] parts = packageNameToPath(packageName).split(String.valueOf(File.separatorChar));
+    		String[] next = new String[parts.length-1];
+    		
+    		start = parts[0];
+    		for (int i=0; i<parts.length-1; i++)
+    			next[i] = parts[i+1];
+    		
+    		return Paths.get(start, next);
+    		
+    }
     /**
      * This static method lists the super types of the given class in order starting with the given class
      * @param cls	The class for which the list of supertypes is required
@@ -497,6 +514,35 @@ public class ClassUtil {
 		return null;
 	}
 
+	public static Class getClassGenericTypeClass(Class cls, int pos) {
+		if (pos < 0) { 
+			logger.warn("Unable to identify generic type for class {} for a negative positional value: {}", 
+					cls.getCanonicalName(), 
+					pos);
+			return null;
+		}
+		Type cType = cls.getGenericSuperclass();
+		if (cType instanceof ParameterizedType) {
+			ParameterizedType pType = (ParameterizedType)cType;
+			Type[] mGenericTypes = pType.getActualTypeArguments();
+			if (pos >= mGenericTypes.length) {
+				logger.warn("Unable to identify generic type for class {} positional value: {}", 
+						cls.getCanonicalName(), 
+						pos);
+				return null;
+			}
+			Type gType = mGenericTypes[pos];
+			if (gType instanceof Class) {
+				return (Class)gType;
+			}
+			logger.warn("Class {} has an unidentifiable type {} at position {}",
+					cls.getCanonicalName(), 
+					gType.getTypeName(),
+					pos);
+		}
+		return null;
+	}
+
 	/**
 	 * A cache of the Getters indexed by class and alias. Where alias is the field name or the sections of the method name 
 	 * following an initial 'get' String with the first letter of the remaining string in lower case
@@ -654,4 +700,34 @@ public class ClassUtil {
 		}
 
 	}
+	
+	public static String getAliasFromMethod(Method method) {
+		if (method == null) return "";
+		return getAliasFromMethodName(method.getName());
+	}
+
+	public static String getAliasFromMethodName(String name) {
+		if (name == null || "".equals(name)) return "";
+		if (name.startsWith("get"))
+			return StringUtil.initialLowerCase(name.substring(3));
+		else
+			return StringUtil.initialLowerCase(name);
+	}
+	
+	
+	public static String getPackageNameFromCanonicalName(String canonicalName) {
+		if (canonicalName == null || "".equals(canonicalName)) return "";
+		int lastPeriod = canonicalName.lastIndexOf('.');
+		if (lastPeriod == -1) return "";
+		return canonicalName.substring(0, lastPeriod);
+	}
+	
+	public static String getBasenameFromCanonicalName(String canonicalName) {
+		if (canonicalName == null || "".equals(canonicalName)) return "void";
+		int lastPeriod = canonicalName.lastIndexOf('.');
+		if (lastPeriod == -1) return canonicalName;
+		return canonicalName.substring(lastPeriod+1);
+	}
+	
+
 }

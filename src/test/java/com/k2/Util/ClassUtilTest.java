@@ -146,5 +146,37 @@ public class ClassUtilTest {
 		assertEquals(A.class, cls);
 
 	}
+	
+	@Test
+	public void getPackageNameFromCanonicalNameTest() {
+		String packageName = ClassUtil.getPackageNameFromCanonicalName("aa.bb.cc.dddd");
+		assertEquals("aa.bb.cc", packageName);
+
+		packageName = ClassUtil.getPackageNameFromCanonicalName("dddd");
+		assertEquals("", packageName);
+
+		packageName = ClassUtil.getPackageNameFromCanonicalName("");
+		assertEquals("", packageName);
+
+		packageName = ClassUtil.getPackageNameFromCanonicalName(null);
+		assertEquals("", packageName);
+
+	}
+
+	@Test
+	public void getBaseNameFromCanonicalNameTest() {
+		String baseName = ClassUtil.getBasenameFromCanonicalName("aa.bb.cc.dddd");
+		assertEquals("dddd", baseName);
+
+		baseName = ClassUtil.getBasenameFromCanonicalName("dddd");
+		assertEquals("dddd", baseName);
+
+		baseName = ClassUtil.getBasenameFromCanonicalName("");
+		assertEquals("void", baseName);
+
+		baseName = ClassUtil.getBasenameFromCanonicalName(null);
+		assertEquals("void", baseName);
+
+	}
 
 }

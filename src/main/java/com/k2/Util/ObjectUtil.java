@@ -87,9 +87,17 @@ public class ObjectUtil {
 					);
 			}
 		}
-		
-		
-		
+	}
+	
+	@SuppressWarnings("unchecked")
+	public static <T> T clone(T toClone) {
+		try {
+			T clone = (T) toClone.getClass().newInstance();
+			copy(toClone, clone);
+			return clone;
+		} catch (InstantiationException | IllegalAccessException e) {
+			throw new UtilityError("It is only possible to clone objects that have a zero arg constructor. No zero arg constructor for {} - {}", e, toClone.getClass().getName(), e.getMessage());
+		}
 	}
 	
 	private static Field findMatchingField(Field match, Field[] fields) {
