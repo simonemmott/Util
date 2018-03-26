@@ -29,6 +29,10 @@ public interface Version {
 		return new SimpleVersion(major, minor, point);
 	}
 	
+	public static Version create(int major, int minor, int point, int build) {
+		return new VersionAndBuild(major, minor, point, build);
+	}
+	
 	/**
 	 * Increment the version, changing the defined number component
 	 * 

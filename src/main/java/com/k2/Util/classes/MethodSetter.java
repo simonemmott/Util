@@ -14,7 +14,7 @@ import com.k2.Util.exceptions.UtilityError;
  * @param <E>	The type of the class on which the getter will be executed
  * @param <T>	The type of the variable returned by the call to get
  */
-public class MethodGetter<E,T> implements Getter<E,T> {
+public class MethodSetter<E,T> implements Setter<E,T> {
 
 	Method method;
 	Class<E> objectClass;
@@ -25,11 +25,14 @@ public class MethodGetter<E,T> implements Getter<E,T> {
 	 * @param returnType		The type of value returned by the call to get
 	 * @param method			The underlying method that returns the value
 	 */
-	public MethodGetter(Class<E> objectClass, Class<T> returnType, Method method) {
-		if (!method.getReturnType().isAssignableFrom(returnType)) 
-			throw new UtilityError("Class mismatch for field. Field {}.{} doesn't supply a {}", method.getDeclaringClass().getName(), method.getName(), returnType.getName());
+	public MethodSetter(Class<E> objectClass, Class<T> javaType, Method method) {
+		
+		if (method.getParameterCount() != 1)
+			throw new UtilityError("Parameter mismatch for method. Method {}.{}(...) recieved otehr than a single argument", method.getDeclaringClass().getName(), method.getName());
+		if ( ! method.getParameterTypes()[0].isAssignableFrom(javaType))
+			throw new UtilityError("Parameter type mismatch for method. Method {}.{}(...) doesn't require a {}", method.getDeclaringClass().getName(), method.getName(), javaType.getName());
 		if (!method.getDeclaringClass().isAssignableFrom(objectClass)) 
-			throw new UtilityError("Class mismatch for method. Method {}.{} isn't a method in {}", method.getDeclaringClass().getName(), method.getName(), objectClass.getName());
+			throw new UtilityError("Class mismatch for method. Method {}.{}(...) isn't a method in {}", method.getDeclaringClass().getName(), method.getName(), objectClass.getName());
 		if (!method.isAccessible()) method.setAccessible(true);
 		this.method = method;
 		this.objectClass = objectClass;
@@ -56,7 +59,7 @@ public class MethodGetter<E,T> implements Getter<E,T> {
 			return false;
 		if (getClass() != obj.getClass())
 			return false;
-		MethodGetter<?,?> other = (MethodGetter<?,?>) obj;
+		MethodSetter<?,?> other = (MethodSetter<?,?>) obj;
 		if (method == null) {
 			if (other.method != null)
 				return false;
@@ -77,13 +80,12 @@ public class MethodGetter<E,T> implements Getter<E,T> {
 		return getType()+":"+getThroughClass().getName()+"."+getAlias();
 	}
 
-	@SuppressWarnings("unchecked")
 	@Override
-	public T get(E object) {
+	public void set(E object, T value) {
 		try {
-			return (T) method.invoke(object);
+			method.invoke(object, value);
 		} catch (IllegalArgumentException | IllegalAccessException | InvocationTargetException e) {
-			throw new UtilityError("Unable to get value from method {}.{}", e, method.getDeclaringClass().getName(), method.getName());
+			throw new UtilityError("Unable to set value through method {}.{}({})", e, method.getDeclaringClass().getName(), method.getName(), value);
 		}
 	}
 

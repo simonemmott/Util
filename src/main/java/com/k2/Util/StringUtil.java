@@ -410,6 +410,7 @@ public class StringUtil {
 				sb.append(initialUpperCase(safeWord.toLowerCase()));
 			}
 		}
+		logger.trace("Alias Case: {} => {}", value, sb.toString());
 		return sb.toString();
 	}
 	/**
@@ -613,7 +614,7 @@ public class StringUtil {
 	 * @return The given camel case string as separate words
 	 */
 	public static String splitCamelCase(String camelCase) {
-	   return camelCase.replaceAll(
+	   String rVal = camelCase.replaceAll(
 	      String.format("%s|%s|%s",
 	         "(?<=[A-Z])(?=[A-Z][a-z])",
 	         "(?<=[^A-Z])(?=[A-Z])",
@@ -621,6 +622,8 @@ public class StringUtil {
 	      ),
 	      " "
 	   );
+		logger.trace("Split Camel Case: {} => {}", camelCase, rVal);
+		return rVal;
 	}
 	
 	private static final String LOWER_SALT = "abcdefghijklmnopqrstuvwxyz";

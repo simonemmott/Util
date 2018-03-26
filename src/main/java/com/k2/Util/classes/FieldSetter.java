@@ -11,7 +11,7 @@ import com.k2.Util.exceptions.UtilityError;
  * @param <E>	The type of object that includes the field
  * @param <T>	The type of value held in the field
  */
-public class FieldGetter<E,T> implements Getter<E,T> {
+public class FieldSetter<E,T> implements Setter<E,T> {
 
 	Field field;
 	Class<E> objectClass;
@@ -22,7 +22,7 @@ public class FieldGetter<E,T> implements Getter<E,T> {
 	 * @param fieldClass		The class of the objects identified by the field
 	 * @param field			The field from which the getter will draw its value
 	 */
-	public FieldGetter(Class<E> objectClass, Class<T> fieldClass, Field field) {
+	public FieldSetter(Class<E> objectClass, Class<T> fieldClass, Field field) {
 		if (!field.getType().isAssignableFrom(fieldClass)) 
 			throw new UtilityError("Class mismatch for field. Field {}.{} doesn't supply a {}", field.getDeclaringClass().getName(), field.getName(), fieldClass.getName());
 		if (!field.getDeclaringClass().isAssignableFrom(objectClass)) 
@@ -52,7 +52,7 @@ public class FieldGetter<E,T> implements Getter<E,T> {
 			return false;
 		if (getClass() != obj.getClass())
 			return false;
-		FieldGetter<?,?> other = (FieldGetter<?,?>) obj;
+		FieldSetter<?,?> other = (FieldSetter<?,?>) obj;
 		if (field == null) {
 			if (other.field != null)
 				return false;
@@ -72,13 +72,12 @@ public class FieldGetter<E,T> implements Getter<E,T> {
 		return getType()+":"+getThroughClass().getName()+"."+getAlias();
 	}
 
-	@SuppressWarnings("unchecked")
 	@Override
-	public T get(E object) {
+	public void set(E object, T value) {
 		try {
-			return (T) field.get(object);
+			field.set(object, value);
 		} catch (IllegalArgumentException | IllegalAccessException e) {
-			throw new UtilityError("Unable to get value from field {}.{}", e, field.getDeclaringClass().getName(), field.getName());
+			throw new UtilityError("Unable to set value in field {}.{}", e, field.getDeclaringClass().getName(), field.getName());
 		}
 	}
 

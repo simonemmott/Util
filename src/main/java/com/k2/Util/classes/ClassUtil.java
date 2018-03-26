@@ -19,9 +19,12 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
+import javax.persistence.ManyToOne;
 import javax.tools.FileObject;
 import javax.tools.ForwardingJavaFileManager;
 import javax.tools.JavaFileManager;
@@ -379,6 +382,17 @@ public class ClassUtil {
 		}
 		return methods;
 	}
+	
+	public static Method[] getAnnotatedMethods(Class<?> cls, Class<? extends Annotation> annotation) {
+		if (cls ==null) return null;
+		Method[] methods = getDeclaredMethods(cls);
+		Set<Method> out = new HashSet<Method>(methods.length);
+		for (Method m : methods) 
+			if (m.isAnnotationPresent(annotation))
+				out.add(m);
+		
+		return out.toArray(new Method[out.size()]);
+	}
 
     /**
      * The static cache of fields by class
@@ -429,6 +443,17 @@ public class ClassUtil {
 		}
 		return fields;
 	}
+	public static Field[] getAnnotatedFields(Class<?> cls, Class<? extends Annotation> annotation) {
+		if (cls ==null) return null;
+		Field[] fields = getDeclaredFields(cls);
+		Set<Field> out = new HashSet<Field>(fields.length);
+		for (Field f : fields) 
+			if (f.isAnnotationPresent(annotation))
+				out.add(f);
+		
+		return out.toArray(new Field[out.size()]);
+	}
+
 	/**
 	 * This static method extracts the field definition from the given class.
 	 * @param cls		The class for which the field is required 
@@ -549,6 +574,11 @@ public class ClassUtil {
 	 */
 	private static Map<Pair<Class<?>, String>, Getter<?,?>> getters = new HashMap<Pair<Class<?>, String>, Getter<?,?>>();
 	/**
+	 * A cache of the Setters indexed by class and alias. Where alias is the field name or the sections of the method name 
+	 * following an initial 'set' String with the first letter of the remaining string in lower case
+	 */
+	private static Map<Pair<Class<?>, String>, Setter<?,?>> setters = new HashMap<Pair<Class<?>, String>, Setter<?,?>>();
+	/**
 	 * This static method returns an instance of Getter for the given object class, value class and alias
 	 * If a suitable MethodGetter can be idenified then the MethodGetter is returned otherwise a FieldGetter is returned
 	 * if a suitable field can be identified. If no suitable method or field can be identified a null is returned
@@ -588,6 +618,47 @@ public class ClassUtil {
 		}
 		logger.trace("Returning getter {}", g);
 		return g;
+	}
+	/**
+	 * This static method returns an instance of Getter for the given object class, value class and alias
+	 * If a suitable MethodGetter can be idenified then the MethodGetter is returned otherwise a FieldGetter is returned
+	 * if a suitable field can be identified. If no suitable method or field can be identified a null is returned
+	 * @param objectClass	The class of the object for which a getter is required
+	 * @param valueClass		The class of the value to be returned by the resultant getter
+	 * @param alias			The alias of the field or method whose value is to be returned by the getter
+	 * @return				A Getter instance for the given values or null if no suitable getter can be identified from the 
+	 * 						given object class
+	 * @param <E> The class of the object through which the getter will be invoked
+	 * @param <V> The class of the values returned by calls to get()
+	 */
+	@SuppressWarnings("unchecked")
+	public static <E,V> Setter<E,V> getSetter(Class<E> objectClass, Class<V> valueClass, String alias) {
+		Pair<Class<?>, String> pair = new Pair<Class<?>, String>(objectClass, alias);
+		Setter<E,V> s = (Setter<E, V>) setters.get(pair);
+		if (s == null) {
+			logger.trace("Setter not yet defined");
+			Member m = getSetterMember(objectClass, valueClass, alias);
+			if (m != null) {
+				if (m instanceof Method) {
+					s = new MethodSetter<E,V>(objectClass, valueClass, (Method)m);					
+				} else if (m instanceof Field){
+					s = new FieldSetter<E,V>(objectClass, valueClass, (Field)m);
+				}
+			}
+			
+			if (s != null) {
+				logger.trace("Caching {} setter {}.{}", s.getType(), s.getThroughClass(), s.getAlias());
+				setters.put(pair, s);
+		
+			}
+		} else {
+			if (!valueClass.isAssignableFrom(s.getJavaType())) {
+				logger.trace("The cached setter {} does not set the required type {}", s, valueClass.getName());
+				s = null;
+			}
+		}
+		logger.trace("Returning getter {}", s);
+		return s;
 	}
 	/**
 	 * This static method checks to see whether a getter is available for the given value class and alias on the given object class
@@ -708,7 +779,7 @@ public class ClassUtil {
 
 	public static String getAliasFromMethodName(String name) {
 		if (name == null || "".equals(name)) return "";
-		if (name.startsWith("get"))
+		if (name.startsWith("get")||name.startsWith("set"))
 			return StringUtil.initialLowerCase(name.substring(3));
 		else
 			return StringUtil.initialLowerCase(name);
@@ -729,5 +800,59 @@ public class ClassUtil {
 		return canonicalName.substring(lastPeriod+1);
 	}
 	
+	public static String title(Class<?> cls) {
+		return StringUtil.splitCamelCase(cls.getSimpleName());
+	}
+	
+	public static String alias(Class<?> cls) {
+		return StringUtil.aliasCase(title(cls));
+	}
 
+	public static String title(Field f) {
+		return StringUtil.splitCamelCase(f.getName());
+	}
+	
+	public static String alias(Field f) {
+		return StringUtil.aliasCase(title(f));
+	}
+
+	public static String alias(Method m) {
+		return getAliasFromMethod(m);
+	}
+
+	public static String title(Method m) {
+		if (m == null) return "";
+		if (m.getName().startsWith("get")||m.getName().startsWith("set"))
+			return StringUtil.splitCamelCase(m.getName().substring(3));
+		else
+			return StringUtil.splitCamelCase(m.getName());
+	}
+	public static boolean isAnnotationPresent(Member member, Class<? extends Annotation> annotation) {
+		if (member instanceof Field)
+			return ((Field)member).isAnnotationPresent(annotation);
+		else if (member instanceof Method)
+			return ((Method)member).isAnnotationPresent(annotation);
+		throw new UtilityError("Unsupprted member type {}", member.getClass().getName());
+	}
+	public static <A extends Annotation> A getAnnotation(Member member, Class<A> annotation) {
+		if (member instanceof Field)
+			return ((Field)member).getAnnotation(annotation);
+		else if (member instanceof Method)
+			return ((Method)member).getAnnotation(annotation);
+		throw new UtilityError("Unsupprted member type {}", member.getClass().getName());
+	}
+	public static String alias(Member member) {
+		if (member instanceof Field)
+			return alias((Field)member);
+		else if (member instanceof Method)
+			return alias((Method)member);
+		throw new UtilityError("Unsupprted member type {}", member.getClass().getName());
+	}
+	public static String title(Member member) {
+		if (member instanceof Field)
+			return title((Field)member);
+		else if (member instanceof Method)
+			return title((Method)member);
+		throw new UtilityError("Unsupprted member type {}", member.getClass().getName());
+	}
 }
