@@ -10,6 +10,8 @@ import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.Map;
 
+import javax.persistence.IdClass;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -187,6 +189,9 @@ public class IdentityUtil {
 		return getId(obj, defaultVal).toString();
 		
 	}
+	
+	@SuppressWarnings("rawtypes")
+	private static Map<Class, EntityToKey> keyGenerators = new HashMap<Class, EntityToKey>();
 	/**
 	 * This method gets the serializable id value from an object.
 	 * 
@@ -196,12 +201,20 @@ public class IdentityUtil {
 	 * @param defaultVal The default value to return if a suitable id value cannot be found
 	 * @return	The id value for the object. If no id field can be identified then the objects simple class name is returned
 	 */
+	@SuppressWarnings({ "rawtypes", "unchecked" })
 	public static Serializable getId(Object obj, Serializable defaultVal) {
 		
 		if (obj == null) return null;
 		
 		if (Id.class.isAssignableFrom(obj.getClass())) return ((Id<?,?>)obj).getId();
 		
+		EntityToKey etk = keyGenerators.get(obj.getClass());
+		if (etk == null) {
+			etk = EntityToKey.forClass(obj.getClass());
+			keyGenerators.put(obj.getClass(), etk);
+		}
+		return (Serializable) etk.getKey(obj);
+/*		
 		Member id = getIdMember(obj.getClass());
 		
 		if (id == null) return defaultVal;
@@ -226,7 +239,7 @@ public class IdentityUtil {
 		}
 		
 		return defaultVal;
-		
+*/		
 	}
 	
 	/**

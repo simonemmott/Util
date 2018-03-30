@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import javax.persistence.IdClass;
 import javax.persistence.ManyToOne;
 import javax.tools.FileObject;
 import javax.tools.ForwardingJavaFileManager;
@@ -394,6 +395,17 @@ public class ClassUtil {
 		return out.toArray(new Method[out.size()]);
 	}
 
+	public static Method[] getAllAnnotatedMethods(Class<?> cls, Class<? extends Annotation> annotation) {
+		if (cls ==null) return null;
+		Method[] methods = getAllMethods(cls);
+		Set<Method> out = new HashSet<Method>(methods.length);
+		for (Method m : methods) 
+			if (m.isAnnotationPresent(annotation))
+				out.add(m);
+		
+		return out.toArray(new Method[out.size()]);
+	}
+
     /**
      * The static cache of fields by class
      * 
@@ -446,6 +458,17 @@ public class ClassUtil {
 	public static Field[] getAnnotatedFields(Class<?> cls, Class<? extends Annotation> annotation) {
 		if (cls ==null) return null;
 		Field[] fields = getDeclaredFields(cls);
+		Set<Field> out = new HashSet<Field>(fields.length);
+		for (Field f : fields) 
+			if (f.isAnnotationPresent(annotation))
+				out.add(f);
+		
+		return out.toArray(new Field[out.size()]);
+	}
+
+	public static Field[] getAllAnnotatedFields(Class<?> cls, Class<? extends Annotation> annotation) {
+		if (cls ==null) return null;
+		Field[] fields = getAllFields(cls);
 		Set<Field> out = new HashSet<Field>(fields.length);
 		for (Field f : fields) 
 			if (f.isAnnotationPresent(annotation))
@@ -854,5 +877,17 @@ public class ClassUtil {
 		else if (member instanceof Method)
 			return title((Method)member);
 		throw new UtilityError("Unsupprted member type {}", member.getClass().getName());
+	}
+	public static <T,A extends Annotation> A getAnnotation(Class<T> cls, Class<A> annotationClass) {
+		A ann = cls.getAnnotation(annotationClass);
+		if (ann == null && cls.getSuperclass() != Object.class)
+			return getAnnotation(cls.getSuperclass(), annotationClass);
+		return ann;
+	}
+	public static <T,A extends Annotation> boolean isAnnotationPresent(Class<T> cls, Class<A> annotationClass) {
+		boolean b = cls.isAnnotationPresent(annotationClass);
+		if (( ! b) && cls.getSuperclass() != Object.class)
+			return isAnnotationPresent(cls.getSuperclass(), annotationClass);
+		return b;
 	}
 }
