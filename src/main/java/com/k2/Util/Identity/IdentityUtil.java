@@ -186,7 +186,11 @@ public class IdentityUtil {
 			}
 		} 
 		
-		return getId(obj, defaultVal).toString();
+		try {
+			return getId(obj).toString();
+		} catch (Throwable e) {
+			return defaultVal;
+		}
 		
 	}
 	
@@ -202,7 +206,7 @@ public class IdentityUtil {
 	 * @return	The id value for the object. If no id field can be identified then the objects simple class name is returned
 	 */
 	@SuppressWarnings({ "rawtypes", "unchecked" })
-	public static Serializable getId(Object obj, Serializable defaultVal) {
+	public static Serializable getId(Object obj) {
 		
 		if (obj == null) return null;
 		
@@ -242,17 +246,6 @@ public class IdentityUtil {
 */		
 	}
 	
-	/**
-	 * This method gets the serializable id value from an object.
-	 * 
-	 * If no id field is identifiable in the class or its super classes then the name of the class is returned
-	 * 
-	 * @param obj	The object for which to extract the id value
-	 * @return	The id value for the object. If no id field can be identified then the objects simple class name is returned
-	 */
-	public static Serializable getId(Object obj) {
-		return getId(obj, obj.getClass().getSimpleName());
-	}
 	/**
 	 * Convert the given key into a string
 	 * @param key	The key to express as a String
