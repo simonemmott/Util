@@ -2,6 +2,7 @@ package com.k2.Util.Identity;
 
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Field;
+import java.lang.reflect.Member;
 import java.lang.reflect.Method;
 
 import javax.persistence.EmbeddedId;
@@ -46,6 +47,14 @@ public interface EntityToKey<E, K> {
 		if (IdMethod.length == 1)
 			return new EntityMethodToKey(entityClass, IdMethod[0]);
 		
+		Member id = IdentityUtil.getIdMember(entityClass);
+		if (id != null) {
+			if (id instanceof Field) 
+				return new EntityFieldToKey(entityClass, (Field) id);
+			if (id instanceof Method) 
+				return new EntityMethodToKey(entityClass, (Method) id);
+			
+		}
 		throw new UtilityError("Unable to identify suitable key source for entity {}", entityClass.getName());
 
 	}

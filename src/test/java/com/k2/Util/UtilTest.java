@@ -156,7 +156,6 @@ public class UtilTest {
 		assertEquals(bar.id, IdentityUtil.getId(bar));
 		assertEquals(too.id, IdentityUtil.getId(too));
 		assertEquals(tooMuch.id, IdentityUtil.getId(tooMuch));
-		assertEquals("Snap", IdentityUtil.getId(snap));
 		assertEquals(noSnap.aw, IdentityUtil.getId(noSnap));
 		
 	}

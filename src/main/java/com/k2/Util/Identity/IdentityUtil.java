@@ -52,7 +52,7 @@ public class IdentityUtil {
 	 * @param cls	The class from which to extract the identify field.
 	 * @return	The field holding the id value. If not suitable field is can be identified then null is returned.
 	 */
-	private static Member getIdMember(Class<?> cls) {
+	static Member getIdMember(Class<?> cls) {
 		if (cls == null) return null;
 		Member id = idMembersMap.get(cls);
 		if (id != null) return id;
