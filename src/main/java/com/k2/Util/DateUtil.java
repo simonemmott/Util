@@ -1,6 +1,7 @@
 package com.k2.Util;
 
 import java.lang.invoke.MethodHandles;
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashMap;
@@ -49,6 +50,15 @@ public class DateUtil {
 	/**
 	 * The date formatter
 	 */
+	public static Date toDate(String dateStr, String formatStr) {
+		SimpleDateFormat sdf = new SimpleDateFormat(formatStr);
+		try {
+			return sdf.parse(dateStr);
+		} catch (ParseException e) {
+			logger.warn("Unable to parse date {} with format {}", dateStr, formatStr);
+			return null;
+		}
+	}
 	private static SimpleDateFormat dateFormatter;
 	/**
 	 * This method returns the current date formatter

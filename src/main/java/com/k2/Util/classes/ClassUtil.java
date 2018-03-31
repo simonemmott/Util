@@ -491,6 +491,13 @@ public class ClassUtil {
 		throw new UtilityError("The alias {} does not exists as a field in class {}", alias, cls.getName());
 	}
 
+	public static Field getField(Class<?> cls, Class<?> type) {
+		for (Field f : getAllFields(cls)) {
+			if (f.getType().isAssignableFrom(type)) return f;
+		}
+		return null;
+	}
+
 	/**
 	 * This method extracts the generic type of a field that is defined with generic type arguements
 	 * @param fld	The field from which to extract the generic type argument

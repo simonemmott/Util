@@ -28,6 +28,7 @@ import java.util.Map;
 import javax.persistence.Column;
 import javax.persistence.EmbeddedId;
 import javax.persistence.Id;
+import javax.persistence.IdClass;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -106,8 +107,15 @@ public class KeyUtil {
 	
 	@SuppressWarnings("unchecked")
 	public static Class<Serializable> getKeyClass(Class<?> entityClass) {
+		
 		Class<Serializable> keyClass = keyClasses.get(entityClass);
 		if (keyClass != null) return keyClass;
+		
+		IdClass idClass = ClassUtil.getAnnotation(entityClass, IdClass.class);
+		if (idClass != null) {
+			keyClasses.put(entityClass, idClass.value());
+			return idClass.value();
+		}
 		
 		for (Field f : ClassUtil.getAllFields(entityClass)) {
 			if (f.isAnnotationPresent(Id.class) || f.isAnnotationPresent(EmbeddedId.class)) {
@@ -132,7 +140,7 @@ public class KeyUtil {
 	
 	private static Map<Class<Serializable>, Constructor<Serializable>> keyConstructors = new HashMap<Class<Serializable>, Constructor<Serializable>>();
 
-	private static Serializable constructKey(Class<Serializable> keyClass, Object ... keyValues) {
+	public static Serializable constructKey(Class<Serializable> keyClass, Object ... keyValues) {
 		
 		if (keyClass.isPrimitive()/* || keyClass.getName().startsWith("java.")*/) {
 			if (keyValues.length != 1)
