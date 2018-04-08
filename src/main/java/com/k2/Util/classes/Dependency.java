@@ -1,5 +1,6 @@
 package com.k2.Util.classes;
 
+import com.k2.Util.StringUtil;
 import com.k2.Util.tuple.Pair;
 
 /**
@@ -8,6 +9,14 @@ import com.k2.Util.tuple.Pair;
  *
  */
 public class Dependency extends Pair<String, String> implements Comparable<Dependency> {
+	
+	public static Dependency forClass(Class<?> cls) { return new Dependency(cls); }
+	public static Dependency fromString(String name) { 
+		return new Dependency(ClassUtil.getPackageNameFromCanonicalName(name), ClassUtil.getBasenameFromCanonicalName(name)); 
+	}
+	public static Dependency fromString(String packageName, String className) { 
+		return new Dependency(packageName, className); 
+	}
 
 	/**
 	 * Create a dependency for the given package name and simple class name
@@ -38,12 +47,17 @@ public class Dependency extends Pair<String, String> implements Comparable<Depen
 	public String getClassName() { return b; }
 	
 	/**
+	 * @return Get the canonical name of the dependency
+	 */
+	public String getName() { return (StringUtil.isSet(a))?a+"."+b:b; }
+	
+	/**
 	 * Get the class for this dependency
 	 * @return	The class for this dependency
 	 * @throws ClassNotFoundException	If the class does not exist
 	 */
 	public Class<?> getDependencyClass() throws ClassNotFoundException {
-		return Class.forName(getPackageName()+"."+getClassName());
+		return Class.forName(getName());
 	}
 	
 	/**
@@ -51,7 +65,7 @@ public class Dependency extends Pair<String, String> implements Comparable<Depen
 	 * @return	The java import clause for this dependency
 	 */
 	public String getImportClause() {
-		return "import "+getPackageName()+"."+getClassName()+";";
+		return "import "+getName()+";";
 	}
 
 	/**

@@ -534,7 +534,7 @@ public class StringUtil {
 		String output = input;
 		for (Object replacement : replacements) {
 			try {
-				output = output.replaceFirst(Pattern.quote("{}"), customEncode(toString(replacement), dollarEncodeMap()));
+				output = output.replaceFirst(Pattern.quote("{}"), (replacement==null) ? "null" : customEncode(toString(replacement), dollarEncodeMap()));
 			} catch (Throwable e) {
 				logger.warn("Unable to replace {} with '"+replacement+"'");
 				try {
@@ -719,5 +719,10 @@ public class StringUtil {
 			if (c == s.charAt(i)) return true;
 		}
 		return false;
+	}
+	
+	public static String[] lines(String text) {
+		if (text == null) return new String[0];
+		return text.split("\\r?\\n");
 	}
 }

@@ -349,6 +349,14 @@ public class ClassUtil {
 	 */
 	public static Method[] getAllMethods(Class<?> cls) {
 		List<MethodSignature> signatures = new ArrayList<MethodSignature>();
+		if (cls.isInterface()) {
+			for (Class<?> iFace : cls.getInterfaces()) {
+				for (Method m : getAllMethods(iFace)) {
+					MethodSignature ms = MethodSignature.forMethod(m);
+					if (!signatures.contains(ms)) signatures.add(ms);
+				}
+			}
+		}
 		for (Class<?> c : getSupertypes(cls)) {
 			if(!c.equals(Object.class)) {
 				for (Method m : getDeclaredMethods(c)) {
@@ -485,10 +493,16 @@ public class ClassUtil {
 	 * 					If there is no field for the given alias in the given class an unchecked UtilityError is thrown
 	 */
 	public static Field getField(Class<?> cls, String alias) {
+		return getField(cls, alias, true);
+	}
+
+	public static Field getField(Class<?> cls, String alias, boolean strict) {
 		for (Field f : getAllFields(cls)) {
 			if (f.getName().equals(alias)) return f;
 		}
-		throw new UtilityError("The alias {} does not exists as a field in class {}", alias, cls.getName());
+		if(strict)
+			throw new UtilityError("The alias {} does not exists as a field in class {}", alias, cls.getName());
+		return null;
 	}
 
 	public static Field getField(Class<?> cls, Class<?> type) {
@@ -690,6 +704,18 @@ public class ClassUtil {
 		logger.trace("Returning getter {}", s);
 		return s;
 	}
+	public static <E,V> Setter<E,V> getSetter(Class<E> objectClass, Class<V> valueClass) {
+		Member m = getSetterMember(objectClass, valueClass);
+		if (m != null) {
+			if (m instanceof Method) {
+				return new MethodSetter<E,V>(objectClass, valueClass, (Method)m);					
+			} else if (m instanceof Field){
+				return new FieldSetter<E,V>(objectClass, valueClass, (Field)m);
+			}
+		}
+		
+		return null;
+	}
 	/**
 	 * This static method checks to see whether a getter is available for the given value class and alias on the given object class
 	 * @param objectClass	The class of the object for which a getter is required
@@ -719,6 +745,20 @@ public class ClassUtil {
 		return null;
 	}
 
+	public static Member getSetterMember(Class<?> cls, Class<?> type) {
+		for (Method m : getAllMethods(cls)) {
+			if (m.getParameterCount() == 1 && m.getParameters()[0].getType().isAssignableFrom(type)) {
+				return m;
+			}
+		}
+		for (Field f : getAllFields(cls)) {
+			if (type.isAssignableFrom(f.getType())) {
+				return f;
+			}
+		}
+		return null;
+	}
+	
 	public static Member getSetterMember(Class<?> cls, Class<?> type, String alias) {
 		for (Method m : getAllMethods(cls)) {
 			if (m.getName().equals("set"+StringUtil.initialUpperCase(alias))

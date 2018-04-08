@@ -4,6 +4,8 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.TreeSet;
 
+import com.k2.Util.StringUtil;
+
 /**
  * The Dependencies class represents a set distinct dependencies
  * 
@@ -11,6 +13,18 @@ import java.util.TreeSet;
  *
  */
 public class Dependencies {
+	
+	private String forName;
+	private String packageName;
+	private Package pack;
+	public Dependencies() {}
+	private Dependencies(String forName) { 
+		this.forName = forName; 
+		this.packageName = ClassUtil.getPackageNameFromCanonicalName(forName);
+		if (StringUtil.isSet(packageName))
+			pack = Package.getPackage(packageName);
+	}
+	public static Dependencies forName(String name) { return new Dependencies(name); }
 
 	private Set<Dependency> dependencies= new TreeSet<Dependency>();
 	
@@ -34,6 +48,26 @@ public class Dependencies {
 		return true;
 	}
 	
+	public boolean requiresImport(String name) {
+		if (name == null) 
+			return false;
+		if (		name.equals("int")||
+				name.equals("long")||
+				name.equals("boolean")||
+				name.equals("float")||
+				name.equals("double")||
+				name.equals("char")||
+				name.equals("short")||
+				name.equals("byte")|| 
+				name.equals("void")) 
+			return false;
+		if (name.startsWith("java.lang.")) 
+			return false;
+		if (packageName != null && packageName.equals(ClassUtil.getPackageNameFromCanonicalName(name))) 
+			return false;
+		return true;
+	}
+	
 	/**
 	 * Add the given classes to the maintained set of dependencies 
 	 * @param classes	The classes to add to the set of dependencies
@@ -41,7 +75,8 @@ public class Dependencies {
 	public void add(Class<?> ... classes) {
 		for (Class<?> cls : classes) {
 			if (cls != null) {
-				dependencies.add(new Dependency(cls));
+				if (requiresImport(cls,pack))
+					dependencies.add(new Dependency(cls));
 			}
 		}
 	}
@@ -51,7 +86,14 @@ public class Dependencies {
 	 * @param ds		The set of dependencies to add to these dependencies
 	 */
 	public void addAll(Set<Dependency> ds) {
-		dependencies.addAll(ds);
+		for (Dependency d : ds) 
+			add(d);
+//		dependencies.addAll(ds);
+	}
+	
+	public void add(Dependency d) {
+		if (requiresImport(d.getName()))
+			dependencies.add(d);
 	}
 	
 	/**
