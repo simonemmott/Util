@@ -17,6 +17,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -936,5 +937,8 @@ public class ClassUtil {
 		if (( ! b) && cls.getSuperclass() != Object.class)
 			return isAnnotationPresent(cls.getSuperclass(), annotationClass);
 		return b;
+	}
+	public static <S> boolean isCollection(Class<S> sourceType, String fieldAlias) {
+		return (getGetterMember(sourceType, Collection.class, fieldAlias) != null);
 	}
 }

@@ -26,7 +26,7 @@ public class MethodGetter<E,T> implements Getter<E,T> {
 	 * @param method			The underlying method that returns the value
 	 */
 	public MethodGetter(Class<E> objectClass, Class<T> returnType, Method method) {
-		if (!method.getReturnType().isAssignableFrom(returnType)) 
+		if (!returnType.isAssignableFrom(method.getReturnType())) 
 			throw new UtilityError("Class mismatch for field. Field {}.{} doesn't supply a {}", method.getDeclaringClass().getName(), method.getName(), returnType.getName());
 		if (!method.getDeclaringClass().isAssignableFrom(objectClass)) 
 			throw new UtilityError("Class mismatch for method. Method {}.{} isn't a method in {}", method.getDeclaringClass().getName(), method.getName(), objectClass.getName());
