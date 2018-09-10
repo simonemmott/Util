@@ -35,6 +35,9 @@ public class Dependency extends Pair<String, String> implements Comparable<Depen
 		super((cls==null)?"":(cls.getPackage()==null)?"":cls.getPackage().getName(), (cls==null)?"":cls.getSimpleName());
 	}
 	
+	public Dependency(String name) {
+		super(ClassUtil.getPackageNameFromCanonicalName(name), ClassUtil.getBasenameFromCanonicalName(name));
+	}
 	/**
 	 * 
 	 * @return The package name for this dependency

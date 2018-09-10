@@ -102,4 +102,8 @@ public class Dependencies {
 	 */
 	public Set<Dependency> getDependencies() { return dependencies; }
 	
+	public boolean hasDependencies() {
+		return ! dependencies.isEmpty();
+	}
+	
 }
