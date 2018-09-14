@@ -4,6 +4,7 @@ import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -393,6 +394,141 @@ public class ObjectUtil {
 		Set<T> set = new HashSet<T>(1);
 		set.add(item);
 		return set;
+	}
+	
+	public static boolean equivalent(int lhs, int rhs) { logger.debug("(int) "+lhs+" == "+rhs+"?"); return (lhs == rhs); }
+	public static boolean equivalent(long lhs, long rhs) { logger.debug("(long) "+lhs+" == "+rhs+"?"); return (lhs == rhs); }
+	public static boolean equivalent(boolean lhs, boolean rhs) { logger.debug("(boolean) "+lhs+" == "+rhs+"?"); return (lhs == rhs); }
+	public static boolean equivalent(char lhs, char rhs) { logger.debug("(char) "+lhs+" == "+rhs+"?"); return (lhs == rhs); }
+	public static boolean equivalent(byte lhs, byte rhs) { logger.debug("(byte) "+lhs+" == "+rhs+"?"); return (lhs == rhs); }
+	public static boolean equivalent(short lhs, short rhs) { logger.debug("(short) "+lhs+" == "+rhs+"?"); return (lhs == rhs); }
+	public static boolean equivalent(float lhs, float rhs) { logger.debug("(float) "+lhs+" == "+rhs+"?"); return (lhs == rhs); }
+	public static boolean equivalent(double lhs, double rhs) { logger.debug("(double) "+lhs+" == "+rhs+"?"); return (lhs == rhs); }
+	
+	public static boolean equivalent(Integer lhs, Integer rhs) { logger.debug("(Integer) "+lhs+" == "+rhs+"?"); return (lhs==null)?false:lhs.equals(rhs); }
+	public static boolean equivalent(Long lhs, Long rhs) { logger.debug("(Long) "+lhs+" == "+rhs+"?"); return (lhs==null)?false:lhs.equals(rhs); }
+	public static boolean equivalent(Boolean lhs, Boolean rhs) { logger.debug("(Boolean) "+lhs+" == "+rhs+"?"); return (lhs==null)?false:lhs.equals(rhs); }
+	public static boolean equivalent(Character lhs, Character rhs) { logger.debug("(Character) "+lhs+" == "+rhs+"?"); return (lhs==null)?false:lhs.equals(rhs); }
+	public static boolean equivalent(Byte lhs, Byte rhs) { logger.debug("(Byte) "+lhs+" == "+rhs+"?"); return (lhs==null)?false:lhs.equals(rhs); }
+	public static boolean equivalent(Short lhs, Short rhs) { logger.debug("(Short) "+lhs+" == "+rhs+"?"); return (lhs==null)?false:lhs.equals(rhs); }
+	public static boolean equivalent(Float lhs, Float rhs) { logger.debug("(Float) "+lhs+" == "+rhs+"?"); return (lhs==null)?false:lhs.equals(rhs); }
+	public static boolean equivalent(Double lhs, Double rhs) { logger.debug("(Double) "+lhs+" == "+rhs+"?"); return (lhs==null)?false:lhs.equals(rhs); }
+	public static boolean equivalent(String lhs, String rhs) { logger.debug("(String) "+lhs+" == "+rhs+"?"); return (lhs==null)?false:lhs.equals(rhs); }
+	public static boolean equivalent(Date lhs, Date rhs) { logger.debug("(Date) "+lhs+" == "+rhs+"?"); return (lhs==null)?false:lhs.equals(rhs); }
+	public static <T> boolean equivalent(Collection<T> lhs, Collection<T> rhs) {
+		logger.debug("(Collection<T>) "+lhs+" == "+rhs+"?"); 
+		if (lhs == null || rhs == null )
+			return false;
+		
+		if (lhs.size() != rhs.size()) {
+			logger.debug("Size mismatch: lhs.size()["+lhs.size()+"] != rhs.size()["+rhs.size()+"]");
+			return false;
+		}
+		
+		T[] lhsTa = (T[]) lhs.toArray();
+		T[] rhsTa = (T[]) rhs.toArray();
+
+		for (int i = 0; i<lhs.size(); i++) {
+			logger.debug("Checking collection index ["+i+"]");
+			if (! equivalent(lhsTa[i], rhsTa[i]))
+				return false;
+		}
+		
+		return true; 
+	}
+
+
+	public static <T> boolean equivalent(T lhs, T rhs) {
+		logger.debug("(T) "+lhs+" == "+rhs+"?"); 
+		if ( ! lhs.getClass().equals(rhs.getClass())) {
+			logger.debug("Class mismatch: lhs.getClass()[{}].equals(rhs.getClass()[{}])", lhs.getClass().getName(), rhs.getClass().getName());
+			return false;
+		}
+		
+		for (Field f : ClassUtil.getAllFields(lhs.getClass())) {
+			if (f.isSynthetic()) continue;
+			logger.debug("Checking field {}.{}:{}", lhs.getClass().getSimpleName(), f.getName(), f.getType().getSimpleName());
+			f.setAccessible(true);
+			try {
+				if(f.getType() == int.class) {
+					if ( ! equivalent(f.getInt(lhs), f.getInt(rhs))) return false;
+				} else if (f.getType() == long.class) {
+					if ( ! equivalent(f.getLong(lhs), f.getLong(rhs))) return false;
+				} else if (f.getType() == char.class) {
+					if ( ! equivalent(f.getChar(lhs), f.getChar(rhs))) return false;
+				} else if (f.getType() == float.class) {
+					if ( ! equivalent(f.getFloat(lhs), f.getFloat(rhs))) return false;
+				} else if (f.getType() == double.class) {
+					if ( ! equivalent(f.getDouble(lhs), f.getDouble(rhs))) return false;
+				} else if (f.getType() == boolean.class) {
+					if ( ! equivalent(f.getBoolean(lhs), f.getBoolean(rhs))) return false;
+				} else if (f.getType() == short.class) {
+					if ( ! equivalent(f.getShort(lhs), f.getShort(rhs))) return false;
+				} else if (f.getType() == byte.class) {
+					if ( ! equivalent(f.getByte(lhs), f.getByte(rhs))) return false;
+				} else if (f.getType() == Integer.class) {
+					if ( ! equivalent((Integer)f.get(lhs), (Integer)f.get(rhs))) return false;
+				} else if (f.getType() == Long.class) {
+					if ( ! equivalent((Long)f.get(lhs), (Long)f.get(rhs))) return false;
+				} else if (f.getType() == Float.class) {
+					if ( ! equivalent((Float)f.get(lhs), (Float)f.get(rhs))) return false;
+				} else if (f.getType() == Double.class) {
+					if ( ! equivalent((Double)f.get(lhs), (Double)f.get(rhs))) return false;
+				} else if (f.getType() == Byte.class) {
+					if ( ! equivalent((Byte)f.get(lhs), (Byte)f.get(rhs))) return false;
+				} else if (f.getType() == Short.class) {
+					if ( ! equivalent((Short)f.get(lhs), (Short)f.get(rhs))) return false;
+				} else if (f.getType() == Character.class) {
+					if ( ! equivalent((Character)f.get(lhs), (Character)f.get(rhs))) return false;
+				} else if (f.getType() == Boolean.class) {
+					if ( ! equivalent((Boolean)f.get(lhs), (Boolean)f.get(rhs))) return false;
+				} else if (f.getType() == String.class) {
+					if ( ! equivalent((String)f.get(lhs), (String)f.get(rhs))) return false;
+				} else if (f.getType() == Date.class) {
+					if ( ! equivalent((Date)f.get(lhs), (Date)f.get(rhs))) return false;
+				} else if (Collection.class.isAssignableFrom(f.getType())) {
+					if ( ! equivalent((Collection<T>)f.get(lhs), (Collection<T>)f.get(rhs))) return false;
+				} else if (f.getType().isArray()) {
+					logger.debug("Field {}.{} is Array", lhs.getClass().getSimpleName(), f.getName());
+					T[] lhsFa = (T[]) f.get(lhs);
+					T[] rhsFa = (T[]) f.get(rhs);
+					
+					if (lhsFa.length != rhsFa.length) {
+						logger.debug("Array length mismatch: lhsFa.length[{}] != rhsFa.length[{}]", lhsFa.length, rhsFa.length);
+						return false;
+					}
+					
+					for (int i=0; i<lhsFa.length; i++) {
+						logger.debug("Checking array index[{}]", i);
+						if (lhsFa[i]!=null && rhsFa[i]!=null) {
+							if (lhsFa[i].getClass().isPrimitive()) {
+								if (lhsFa[i] == rhsFa[i]) {
+									logger.debug("Primitive equality failure: {} == {}?", lhsFa[i], rhsFa[i]);
+									return false;
+								}
+							} else {
+								if ( ! equivalent(lhsFa[i], rhsFa[i])) {
+									logger.debug("Array field value equivalence check failure: {}.{}[{}]", lhs.getClass().getSimpleName(), f.getName(), i);
+									return false;
+								}
+							}
+						}
+					}
+					
+				} else {
+					if ( ! equivalent(f.get(lhs), f.get(rhs))) {
+						logger.debug("Field value equivalence check failure: {}.{}", lhs.getClass().getSimpleName(), f.getName());
+						return false;
+					}
+				}
+			} catch (IllegalArgumentException | IllegalAccessException e) {
+				logger.error(e.getMessage());
+				return false;
+			}
+		}
+		
+		logger.debug("{} is equivalent to {}", lhs, rhs);
+		return true;
 	}
 
 }

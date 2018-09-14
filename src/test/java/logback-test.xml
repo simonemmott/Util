@@ -8,7 +8,7 @@
     </encoder>
   </appender>
 
-  <logger name="com.k2.Util.ObjectUtil" level="warn"/>
+  <logger name="com.k2.Util.ObjectUtil" level="debug"/>
   <logger name="com.k2.Util.ClassUtil" level="trace"/>
   <logger name="com.k2.Util.StringUtil" level="warn"/>
   <logger name="com.k2.Util.FileUtil" level="warn"/>

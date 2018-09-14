@@ -13,8 +13,10 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Scanner;
+import java.util.Set;
 
 import javax.persistence.Tuple;
 import javax.persistence.TupleElement;
@@ -45,7 +47,124 @@ public class ObjectUtilTest {
 	
 	private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
+	private class E {
+		public String name;
+		public Long id;
+		public int number;
+		public B b;
+		public List<B> bs;
+	}
+	
+	private class B {
+		public String name;
+		public B(String name) { this.name = name; }
+	}
 
+	@Test
+	public void equivalentTest() {
+		
+		E a1 = new E();
+		a1.name = "a1";
+		a1.id = 100L;
+		a1.number = 0;
+		a1.b = new B("a1.b");
+		a1.bs = new ArrayList<B>();
+		a1.bs.add(new B("b1"));
+		a1.bs.add(new B("b2"));
+		a1.bs.add(new B("b3"));
+		
+		E a1copy = new E();
+		a1copy.name = "a1";
+		a1copy.id = 100L;
+		a1copy.number = 0;
+		a1copy.b = new B("a1.b");
+		a1copy.bs = new ArrayList<B>();
+		a1copy.bs.add(new B("b1"));
+		a1copy.bs.add(new B("b2"));
+		a1copy.bs.add(new B("b3"));
+		
+		E different1 = new E();
+		different1.name = "a2";
+		different1.id = 100L;
+		different1.number = 0;
+		different1.b = new B("a1.b");
+		different1.bs = new ArrayList<B>();
+		different1.bs.add(new B("b1"));
+		different1.bs.add(new B("b2"));
+		different1.bs.add(new B("b3"));
+		
+		E differentNull = new E();
+		differentNull.name = "a1";
+		differentNull.id = null;
+		differentNull.number = 0;
+		differentNull.b = new B("a1.b");
+		differentNull.bs = new ArrayList<B>();
+		differentNull.bs.add(new B("b1"));
+		differentNull.bs.add(new B("b2"));
+		differentNull.bs.add(new B("b3"));
+		
+		E differentPrimitive = new E();
+		differentPrimitive.name = "a1";
+		differentPrimitive.id = 100L;
+		differentPrimitive.number = 1;
+		differentPrimitive.b = new B("a1.b");
+		differentPrimitive.bs = new ArrayList<B>();
+		differentPrimitive.bs.add(new B("b1"));
+		differentPrimitive.bs.add(new B("b2"));
+		differentPrimitive.bs.add(new B("b3"));
+		
+		E differentObject = new E();
+		differentObject.name = "a1";
+		differentObject.id = 100L;
+		differentObject.number = 0;
+		differentObject.b = new B("differentObject.b");
+		differentObject.bs = new ArrayList<B>();
+		differentObject.bs.add(new B("b1"));
+		differentObject.bs.add(new B("b2"));
+		differentObject.bs.add(new B("b3"));
+		
+		E differentCollection1 = new E();
+		differentCollection1.name = "a1";
+		differentCollection1.id = null;
+		differentCollection1.number = 0;
+		differentCollection1.b = new B("a1.b");
+		differentCollection1.bs = new ArrayList<B>();
+		differentCollection1.bs.add(new B("b1"));
+		differentCollection1.bs.add(new B("b2"));
+		differentCollection1.bs.add(new B("b3"));
+		differentCollection1.bs.add(new B("b4"));
+		
+		E differentCollection2 = new E();
+		differentCollection2.name = "a1";
+		differentCollection2.id = null;
+		differentCollection2.number = 0;
+		differentCollection2.b = new B("a1.b");
+		differentCollection2.bs = new ArrayList<B>();
+		differentCollection2.bs.add(new B("b1"));
+		differentCollection2.bs.add(new B("b2"));
+		
+		E differentCollection3 = new E();
+		differentCollection3.name = "a1";
+		differentCollection3.id = null;
+		differentCollection3.number = 0;
+		differentCollection3.b = new B("a1.b");
+		differentCollection3.bs = new ArrayList<B>();
+		differentCollection3.bs.add(new B("b1"));
+		differentCollection3.bs.add(new B("b2"));
+		differentCollection3.bs.add(new B("b4"));
+		
+		assertTrue(ObjectUtil.equivalent(a1, a1copy));
+		assertFalse(ObjectUtil.equivalent(a1, different1));
+		assertFalse(ObjectUtil.equivalent(a1, differentNull));
+		assertFalse(ObjectUtil.equivalent(a1, differentPrimitive));
+		assertFalse(ObjectUtil.equivalent(a1, differentObject));
+		assertFalse(ObjectUtil.equivalent(a1, differentCollection1));
+		assertFalse(ObjectUtil.equivalent(a1, differentCollection2));
+		assertFalse(ObjectUtil.equivalent(a1, differentCollection3));
+		
+	}
+	
+	
 	@Test
 	public void findFirstMatchTest() {
 		
