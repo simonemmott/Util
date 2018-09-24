@@ -291,6 +291,23 @@ public class IdentityUtil {
 		}
 		return null;
 	}
+
+	@SuppressWarnings("unchecked")
+	public static <E> Class<?> getKeyClass(Class<E> entityClass) {
+		EntityToKey<E,?> etk = keyGenerators.get(entityClass);
+		if (etk == null) {
+			etk = EntityToKey.forClass(entityClass);
+			keyGenerators.put(entityClass, etk);
+		}
+		return etk.getKeyClass();
+	}
+
+	public static Class<?> getBaseEntityClass(Class<?> entityClass) {
+		Class<?> baseClass = entityClass;
+		while (baseClass.getSuperclass() != Object.class)
+			baseClass = baseClass.getSuperclass();
+		return baseClass;
+	}
 	
 
 }
