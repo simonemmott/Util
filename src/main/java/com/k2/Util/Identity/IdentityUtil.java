@@ -8,13 +8,16 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Member;
 import java.lang.reflect.Method;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
+import javax.persistence.Entity;
 import javax.persistence.IdClass;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.collect.Lists;
 import com.k2.Util.classes.ClassUtil;
 import com.k2.Util.exceptions.UtilityError;
 
@@ -303,10 +306,13 @@ public class IdentityUtil {
 	}
 
 	public static Class<?> getBaseEntityClass(Class<?> entityClass) {
-		Class<?> baseClass = entityClass;
-		while (baseClass.getSuperclass() != Object.class)
-			baseClass = baseClass.getSuperclass();
-		return baseClass;
+		
+		List<Class<?>> classes = ClassUtil.getSupertypes(entityClass);
+		for (Class<?> cls : Lists.reverse(classes)) {
+			if (cls.isAnnotationPresent(Entity.class))
+				return cls;
+		}
+		return entityClass;
 	}
 	
 
