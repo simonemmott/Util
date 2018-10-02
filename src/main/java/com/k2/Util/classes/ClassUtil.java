@@ -792,9 +792,12 @@ public class ClassUtil {
 		}
 	}
 
+
 	@SuppressWarnings({ "unchecked", "restriction" })
 	public static <T> Class<? extends T> createClassFromString(Class<T> extendsClass, String packageName, String className, String source) {
 
+		System.out.println(source);
+		
 		String fullClassName = packageName.replace('.', '/')+"/"+className;
 		
 		ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
@@ -834,7 +837,7 @@ public class ClassUtil {
 			f.setAccessible(true);
 			
 			sun.misc.Unsafe unsafe = (sun.misc.Unsafe) f.get(null);
-			
+						
 			return (Class<? extends T>) unsafe.defineClass(fullClassName, bytes, 0, bytes.length, extendsClass.getClassLoader(), extendsClass.getProtectionDomain());
 			
 		} catch (NoSuchFieldException | SecurityException | IllegalArgumentException | IllegalAccessException e) {
