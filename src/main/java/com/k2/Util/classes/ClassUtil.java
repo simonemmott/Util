@@ -214,7 +214,7 @@ public class ClassUtil {
         for (File file : files) {
         		// If the file is a directory recursively call findClasses having extended the packageName with the name of the file
             if (file.isDirectory()) {
-            		if (file.getName().contains(".")) throw new UtilityError("Package direcory names must not contain a period '.'");
+            		if (file.getName().contains(".")) throw new UtilityError("Package direcory names '{}' must not contain a period '.'", file.getName());
              	classes.addAll(findClasses(file, packageName + "." + file.getName(), strict, annotationCheck, annotationClasses));
             }
             // If the file is a class file
@@ -944,4 +944,15 @@ public class ClassUtil {
 	public static <S> boolean isCollection(Class<S> sourceType, String fieldAlias) {
 		return (getGetterMember(sourceType, Collection.class, fieldAlias) != null);
 	}
+	
+	public static Path getPackageNameToJavaPath(String packageName) {
+		String[] nodes = packageName.split("\\.");			
+		Path path = Paths.get(nodes[0]);
+		for (int i=1; i<nodes.length; i++) 
+			path = path.resolve(nodes[i]);
+		
+		return path;
+
+	}
+
 }
