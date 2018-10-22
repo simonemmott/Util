@@ -24,6 +24,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Pattern;
 
 import javax.persistence.IdClass;
 import javax.persistence.ManyToOne;
@@ -37,6 +38,10 @@ import javax.tools.JavaFileObject.Kind;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.config.BeanDefinition;
+import org.springframework.context.annotation.ClassPathScanningCandidateComponentProvider;
+import org.springframework.core.type.filter.AnnotationTypeFilter;
+import org.springframework.core.type.filter.RegexPatternTypeFilter;
 
 import com.k2.Util.ObjectUtil;
 import com.k2.Util.StringUtil;
@@ -115,7 +120,97 @@ public class ClassUtil {
      */
     @SafeVarargs
 	public static Class<?>[] getClasses(String packageName, boolean strict, AnnotationCheck annotationCheck, Class<? extends Annotation> ... annotationClasses) {
+  
     	
+        ClassPathScanningCandidateComponentProvider provider = new ClassPathScanningCandidateComponentProvider(false);
+        // Filter to include only classes that have a particular annotation.
+        
+        if (annotationCheck == AnnotationCheck.ANY) {
+        	if (annotationClasses.length > 0) {
+        		for (Class<? extends Annotation> annotation : annotationClasses) {
+        			provider.addIncludeFilter(new AnnotationTypeFilter(annotation));
+        		}
+        	}
+        	else {
+        		provider.addIncludeFilter(new RegexPatternTypeFilter(Pattern.compile(".*")));
+        	}
+	        // Find classes in the given package (or subpackages)
+	        Set<BeanDefinition> beans = provider.findCandidateComponents(packageName);
+	        
+	        Class<?>[] matchedClasses = new Class<?>[beans.size()];
+	        int i = 0;
+	        for (BeanDefinition bd : beans) {
+	        	try {
+					matchedClasses[i++] = Class.forName(bd.getBeanClassName());
+				} catch (ClassNotFoundException e) {
+					throw new UtilityError("Unable to load class from name, {}", e, bd.getBeanClassName());
+				}
+	        }
+        
+	        return matchedClasses;
+        } else {
+        	if (annotationClasses.length > 0) {
+        		logger.trace("get Classes from package {} which match ALL annotations", packageName);
+        		Set<String> matchedClassNames = null;
+        		for (Class<? extends Annotation> annotation : annotationClasses) {
+            		provider = new ClassPathScanningCandidateComponentProvider(false);
+        			logger.trace("Finding classes annotated with {}", annotation.getName());
+        			provider.addIncludeFilter(new AnnotationTypeFilter(annotation));
+        	        // Find classes in the given package (or subpackages)
+        	        Set<BeanDefinition> beans = provider.findCandidateComponents(packageName);
+        	        
+        	        Set<String> workingClassNames = new HashSet<String>(beans.size());
+        	        if (matchedClassNames == null) {
+        	        	logger.trace("First set");
+	        	        for (BeanDefinition bd : beans) {
+	        	        	logger.trace("Found class {}", bd.getBeanClassName());
+	        	        	workingClassNames.add(bd.getBeanClassName());
+	        	        }
+	        	        matchedClassNames = workingClassNames;
+        	        } else {
+        	        	logger.trace("Subsequent set");
+	        	        for (BeanDefinition bd : beans) {
+	        	        	logger.trace("Found class {}", bd.getBeanClassName());
+	        	        	workingClassNames.add(bd.getBeanClassName());
+	        	        }
+	        	        matchedClassNames.retainAll(workingClassNames);
+         	        }
+                
+        		}
+	        	logger.trace("Final matches");
+    	        Class<?>[] matchedClasses = new Class<?>[matchedClassNames.size()];
+    	        int i = 0;
+    	        for (String className : matchedClassNames) {
+    	        	logger.trace("Found class {}", className);
+    	        	try {
+    					matchedClasses[i++] = Class.forName(className);
+    				} catch (ClassNotFoundException e) {
+    					throw new UtilityError("Unable to load class from name, {}", e, className);
+    				}
+    	        }
+    	        return matchedClasses;
+        	}
+        	else {
+        		provider.addIncludeFilter(new RegexPatternTypeFilter(Pattern.compile(".*")));
+    	        // Find classes in the given package (or subpackages)
+    	        Set<BeanDefinition> beans = provider.findCandidateComponents(packageName);
+    	        
+    	        Class<?>[] matchedClasses = new Class<?>[beans.size()];
+    	        int i = 0;
+    	        for (BeanDefinition bd : beans) {
+    	        	try {
+    					matchedClasses[i++] = Class.forName(bd.getBeanClassName());
+    				} catch (ClassNotFoundException e) {
+    					throw new UtilityError("Unable to load class from name, {}", e, bd.getBeanClassName());
+    				}
+    	        }
+            
+    	        return matchedClasses;
+        	}
+        }
+        
+        
+/*        
     		// Get the context class loader from the current thread
         ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
         if (classLoader == null) throw new UtilityError("Unable to identify the context loader from the current thread");
@@ -142,6 +237,7 @@ public class ClassUtil {
             classes.addAll(findClasses(directory, packageName, strict, annotationCheck, annotationClasses));
         }
         return classes.toArray(new Class[classes.size()]);
+*/
     }
     /**
      * This method returns all the classes defined in a package if they are annotated with the defined annotations

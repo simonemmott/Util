@@ -50,20 +50,18 @@ public class ClassUtilTest {
 	public void packageScanTest() {
 		
 		logger.trace("ClassUtilTest");
-		
+
 		assertEquals("com/k2/Util", ClassUtil.packageNameToPath("com.k2.Util"));
 		
 		Class<?>[] classes = ClassUtil.getClasses("com.k2.Util.Sample");
 		
-		assertEquals(8, classes.length);
+		assertEquals(6, classes.length);
 		
 		List<Class<?>> classesList = Arrays.asList(classes);
 		assertTrue(classesList.contains(Bar.class));
 		assertTrue(classesList.contains(Foo.class));
 		assertTrue(classesList.contains(NoSnap.class));
 		assertTrue(classesList.contains(Snap.class));
-		assertTrue(classesList.contains(TestAnnotation1.class));
-		assertTrue(classesList.contains(TestAnnotation2.class));
 		assertTrue(classesList.contains(Too.class));
 		assertTrue(classesList.contains(TooMuch.class));
 		
@@ -76,7 +74,6 @@ public class ClassUtilTest {
 		assertEquals(2, classesList.size());
 		assertTrue(classesList.contains(Foo.class));
 		assertTrue(classesList.contains(Bar.class));
-		
 		classesList = Arrays.asList(ClassUtil.getClasses("com.k2.Util", TestAnnotation1.class, TestAnnotation2.class));
 		
 		assertEquals(1, classesList.size());
