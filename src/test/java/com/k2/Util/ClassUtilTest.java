@@ -47,7 +47,7 @@ public class ClassUtilTest {
 	private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
 	@Test
-	public void classUtilTest() {
+	public void packageScanTest() {
 		
 		logger.trace("ClassUtilTest");
 		
@@ -92,6 +92,7 @@ public class ClassUtilTest {
 		
 		
 	}
+	
 
 	private class A {
 		int a;
