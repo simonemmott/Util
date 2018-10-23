@@ -122,7 +122,8 @@ public class ClassUtil {
 	public static Class<?>[] getClasses(String packageName, boolean strict, AnnotationCheck annotationCheck, Class<? extends Annotation> ... annotationClasses) {
   
     	
-        ClassPathScanningCandidateComponentProvider provider = new ClassPathScanningCandidateComponentProvider(false);
+//        ClassPathScanningCandidateComponentProvider provider = new ClassPathScanningCandidateComponentProvider(false);
+        K2ComponentScanner provider = new K2ComponentScanner();
         // Filter to include only classes that have a particular annotation.
         
         if (annotationCheck == AnnotationCheck.ANY) {
@@ -153,7 +154,8 @@ public class ClassUtil {
         		logger.trace("get Classes from package {} which match ALL annotations", packageName);
         		Set<String> matchedClassNames = null;
         		for (Class<? extends Annotation> annotation : annotationClasses) {
-            		provider = new ClassPathScanningCandidateComponentProvider(false);
+//            		provider = new ClassPathScanningCandidateComponentProvider(false);
+            		provider = new K2ComponentScanner();
         			logger.trace("Finding classes annotated with {}", annotation.getName());
         			provider.addIncludeFilter(new AnnotationTypeFilter(annotation));
         	        // Find classes in the given package (or subpackages)
