@@ -15,6 +15,7 @@ import java.net.URI;
 import java.net.URL;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.sql.Date;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -611,6 +612,20 @@ public class ClassUtil {
 		return null;
 	}
 
+	public static Field[] getFields(Class<?> cls, Class<?> type) {
+		List<Field> list = new ArrayList<Field>();
+		for (Field f : getAllFields(cls)) {
+			if (type.isAssignableFrom(f.getType())) {
+				list.add(f);
+			} else if (Collection.class.isAssignableFrom(f.getType())) {
+				if (type.isAssignableFrom(ClassUtil.getFieldGenericTypeClass(f, 0))) {
+					list.add(f);
+				}
+			}
+		}
+		return list.toArray(new Field[list.size()]);
+	}
+
 	/**
 	 * This method extracts the generic type of a field that is defined with generic type arguements
 	 * @param fld	The field from which to extract the generic type argument
@@ -1052,5 +1067,14 @@ public class ClassUtil {
 		return path;
 
 	}
-
+	
+	public static boolean isNative(Class<?> cls) {
+		return (cls == Integer.class ||
+				cls == Long.class ||
+				cls == Double.class ||
+				cls == Float.class ||
+				cls == Boolean.class ||
+				cls == String.class ||
+				cls == Date.class);
+	}
 }
